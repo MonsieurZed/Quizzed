@@ -12,9 +12,9 @@ class PlayerAvatar extends StatelessWidget {
     super.key,
     required this.avatarName,
     required this.backgroundColor,
-    this.size = 45, // Taille par défaut
+    this.size = 60,
     this.isSelected = false,
-    this.allowOverflow = false,
+    this.allowOverflow = true,
     this.onTap,
   });
 
@@ -28,7 +28,10 @@ class PlayerAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border:
             isSelected
-                ? Border.all(color: const Color(0xFF39FF14), width: 3)
+                ? Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 3,
+                )
                 : null,
         boxShadow:
             isSelected
@@ -50,7 +53,12 @@ class PlayerAvatar extends StatelessWidget {
             padding: const EdgeInsets.all(6.0),
             child: Image.asset(
               'assets/images/avatars/$avatarName.png',
-              fit: BoxFit.contain,
+              fit:
+                  BoxFit
+                      .cover, // Cover au lieu de contain pour un meilleur remplissage
+              filterQuality:
+                  FilterQuality.high, // Améliorer la qualité du filtre
+              isAntiAlias: true, // Activer l'anti-aliasing
               errorBuilder: (context, error, stackTrace) {
                 // Fallback en cas d'erreur de chargement de l'image
                 return Icon(

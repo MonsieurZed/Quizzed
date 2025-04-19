@@ -89,7 +89,7 @@ class _AvatarSelectorState extends State<AvatarSelector> {
         // Left arrow for navigation
         if (totalPages > 1)
           Container(
-            width: 30,
+            width: 20,
             height: 400, // Hauteur réduite de 400 à 200
             alignment: Alignment.center,
             child: IconButton(
@@ -105,10 +105,10 @@ class _AvatarSelectorState extends State<AvatarSelector> {
                   }),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(
-                minWidth: 30,
-                maxWidth: 30,
-                minHeight: 100,
-                maxHeight: 200, // Hauteur réduite
+                minWidth: 20,
+                maxWidth: 20,
+                minHeight: 400,
+                maxHeight: 400, // Hauteur réduite
               ),
             ),
           ),
@@ -143,9 +143,9 @@ class _AvatarSelectorState extends State<AvatarSelector> {
                           avatarName: avatarName,
                           backgroundColor:
                               Theme.of(context).colorScheme.onInverseSurface,
-                          size: 70, // Taille réduite de 60 à 45
+                          size: 110, // Taille réduite de 60 à 45
                           isSelected: isSelected,
-                          allowOverflow: false,
+                          allowOverflow: true,
                           onTap: null, // Handle tap on the column instead
                         ),
                       ],
@@ -153,16 +153,6 @@ class _AvatarSelectorState extends State<AvatarSelector> {
                   );
                 },
               ),
-
-              // Page indicator
-              if (totalPages > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '${_currentPage + 1}/$totalPages',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
             ],
           ),
         ),
@@ -170,7 +160,7 @@ class _AvatarSelectorState extends State<AvatarSelector> {
         // Right arrow for navigation
         if (totalPages > 1)
           Container(
-            width: 30,
+            width: 20,
             height: 400, // Hauteur réduite correspondant à la flèche gauche
             alignment: Alignment.center,
             child: IconButton(
@@ -186,10 +176,10 @@ class _AvatarSelectorState extends State<AvatarSelector> {
                   }),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(
-                minWidth: 30,
-                maxWidth: 30,
-                minHeight: 100,
-                maxHeight: 200, // Hauteur réduite
+                minWidth: 20,
+                maxWidth: 20,
+                minHeight: 400,
+                maxHeight: 400, // Hauteur réduite
               ),
             ),
           ),

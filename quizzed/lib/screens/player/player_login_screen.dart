@@ -190,9 +190,10 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
                                       .center, // Changed from stretch to center
                               children: [
                                 // Color selector avec espacement réduit
+                                const SizedBox(height: 50),
                                 Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 16.0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0,
                                   ), // Réduction du padding top
                                   child: ColorSelector(
                                     selectedColor: _selectedColor,
@@ -218,13 +219,14 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
                                 ),
                                 const SizedBox(height: 4), // Espace réduit
                                 _buildNicknameField(),
-                                const SizedBox(height: 20), // Espace réduit
+                                const SizedBox(height: 50), // Espace réduit
                                 // Join game button at the bottom with minimum spacing
                                 FilledButton(
                                   onPressed: _joinGame,
                                   style: FilledButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 12,
+                                      horizontal: 100,
                                     ),
                                   ),
 
@@ -236,6 +238,7 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(height: 50),
                               ],
                             ),
                           ),
@@ -273,17 +276,13 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Créer votre profil',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
               const SizedBox(height: 4),
               // N'afficher l'avatar que s'il est disponible
               if (hasAvatar)
                 PlayerAvatar(
                   avatarName: _selectedAvatar!,
                   backgroundColor: _selectedColor,
-                  size: 50,
+                  size: 150,
                   isSelected: false,
                 )
               else
@@ -296,6 +295,7 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
                   ),
                   child: const Icon(Icons.person, color: Colors.white),
                 ),
+              const SizedBox(height: 10),
             ],
           ),
           const SizedBox(width: 10),

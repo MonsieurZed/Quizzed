@@ -52,7 +52,7 @@ class ColorSelector extends StatelessWidget {
               itemCount: _pastelColors.length,
               itemBuilder: (context, index) {
                 final color = _pastelColors[index];
-                final isSelected = selectedColor.value == color.value;
+                final isSelected = selectedColor == color;
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -65,7 +65,10 @@ class ColorSelector extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? Colors.white : Colors.transparent,
+                          color:
+                              isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
                           width: 2,
                         ),
                         boxShadow:
