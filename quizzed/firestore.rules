@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is an admin (MJ)
+    function isAdmin() {
+      // During development, allow any authenticated user to be admin
+      // For production, uncomment the email verification requirement
+      return isAuthenticated(); 
+      // return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    // Quiz sessions collection
+    match /quiz_sessions/{sessionId} {
+      // Only admins can create/update/delete sessions
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin();
+      
+      // Anyone can read sessions
+      allow read: if true;
+    }
+
+    // Questions collection
+    match /questions/{questionId} {
+      // Only admins can create/update/delete questions
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin();
+      
+      // Anyone can read questions
+      allow read: if true;
+    }
+
+    // Players collection
+    match /players/{playerId} {
+      // Anyone can create a player with their own ID
+      allow create: if true;
+      
+      // Players can update their own data
+      // Admins can update any player's data
+      allow update: if isAdmin() || 
+                      (request.auth != null && 
+                       request.auth.uid == playerId);
+      
+      // Anyone can read player data
+      allow read: if true;
+      
+      // Only admins can delete players
+      allow delete: if isAdmin();
+    }
+  }
+}
