@@ -3,6 +3,7 @@
 ///
 /// Affiche un quiz avec son titre, sa description, sa catégorie et sa difficulté
 /// Utilisé dans la liste des quiz par catégorie
+library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/models/quiz/quiz_model.dart';
@@ -11,8 +12,7 @@ class QuizCard extends StatelessWidget {
   final QuizModel quiz;
   final VoidCallback onTap;
 
-  const QuizCard({Key? key, required this.quiz, required this.onTap})
-    : super(key: key);
+  const QuizCard({super.key, required this.quiz, required this.onTap});
 
   Color _getDifficultyColor(BuildContext context, String difficulty) {
     final theme = Theme.of(context);
@@ -166,7 +166,8 @@ class QuizCard extends StatelessWidget {
                           quiz.category,
                           style: theme.textTheme.bodySmall,
                         ),
-                        backgroundColor: theme.colorScheme.surfaceVariant,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                       ),
                       const SizedBox(width: 8),

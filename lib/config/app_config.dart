@@ -1,9 +1,8 @@
-/**
- * App Config
- * 
- * Configuration globale de l'application
- * Constantes, paramètres et valeurs par défaut
- */
+/// App Config
+///
+/// Configuration globale de l'application
+/// Constantes, paramètres et valeurs par défaut
+library;
 
 class AppConfig {
   // Version de l'application

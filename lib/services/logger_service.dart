@@ -3,6 +3,7 @@
 /// Fournit des méthodes pour enregistrer les événements, les erreurs et les activités
 /// de l'application avec différents niveaux de gravité.
 /// Permet le filtrage des logs et l'exportation pour le débogage.
+library;
 
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
@@ -226,10 +227,10 @@ class LoggerService {
         LogLevel.critical => '\x1B[35m', // Magenta
       };
 
-      print('$color$logString$reset');
+      debug('$color$logString$reset');
 
       if (logEntry.stackTrace != null) {
-        print('$color${logEntry.stackTrace}$reset');
+        debug('$color${logEntry.stackTrace}$reset');
       }
     }
   }

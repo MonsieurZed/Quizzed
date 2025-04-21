@@ -2,7 +2,7 @@
 ///
 /// Point d'entrée principal de l'application Quizzzed
 /// Configure Firebase, les providers et lance l'application
-library quizzzed;
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

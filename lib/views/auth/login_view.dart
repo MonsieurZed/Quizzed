@@ -2,6 +2,7 @@
 ///
 /// Page permettant aux utilisateurs de se connecter
 /// à l'application avec leur email et mot de passe
+library;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -76,7 +77,7 @@ class _LoginViewState extends State<LoginView> {
         if (mounted && context.mounted) {
           context.go('/home');
         }
-      } on FirebaseAuthException catch (e, stackTrace) {
+      } on FirebaseAuthException catch (e) {
         setState(() {
           switch (e.code) {
             case 'user-not-found':
@@ -96,7 +97,7 @@ class _LoginViewState extends State<LoginView> {
               _errorMessage = 'Erreur de connexion: ${e.message}';
           }
         });
-      } catch (e, stackTrace) {
+      } catch (e) {
         setState(() {
           _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
         });

@@ -2,6 +2,7 @@
 ///
 /// Vue détaillée d'un lobby où les joueurs peuvent interagir avant le début d'une partie.
 /// Permet de voir les joueurs présents, le code du lobby, les paramètres et de démarrer la partie.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,33 +24,74 @@ import 'package:quizzzed/widgets/shared/section_header.dart';
 class LobbyDetailView extends StatefulWidget {
   final String lobbyId;
 
-  const LobbyDetailView({Key? key, required this.lobbyId}) : super(key: key);
+  const LobbyDetailView({super.key, required this.lobbyId});
 
   @override
   State<LobbyDetailView> createState() => _LobbyDetailViewState();
 }
 
-class _LobbyDetailViewState extends State<LobbyDetailView> {
+class _LobbyDetailViewState extends State<LobbyDetailView>
+    with SingleTickerProviderStateMixin {
   bool _isLeavingLobby = false;
   bool _isStartingGame = false;
   bool _isDrawerExpanded = true; // État d'expansion du menu latéral
   final LoggerService logger = LoggerService();
   final String logTag = 'LobbyDetailView';
 
+  // Animation pour le démarrage du quiz
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isAnimating = false;
+
   @override
   void initState() {
     super.initState();
     _joinLobbyStream();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 20.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeInOut),
+      ),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 0.7, curve: Curves.easeIn),
+      ),
+    );
+
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _navigateToQuizSession();
+      }
+    });
   }
 
   @override
   void dispose() {
     // Se désabonner du stream du lobby si nécessaire
-    final lobbyController = Provider.of<LobbyController>(
-      context,
-      listen: false,
-    );
-    lobbyController.leaveLobbyStream();
+    // Utiliser try-catch pour éviter les erreurs avec les widgets désactivés
+    try {
+      if (mounted) {
+        final lobbyController = Provider.of<LobbyController>(
+          context,
+          listen: false,
+        );
+        lobbyController.leaveLobbyStream();
+      }
+    } catch (e) {
+      logger.error('Erreur lors du désabonnement du stream: $e', tag: logTag);
+    }
+
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -72,7 +114,8 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
       await lobbyController.leaveLobby(widget.lobbyId);
 
       if (mounted) {
-        context.goNamed(AppRoutes.lobbies);
+        // Utiliser pushReplacementNamed au lieu de goNamed pour préserver le menu latéral
+        context.pushReplacementNamed(AppRoutes.lobbies);
       }
     } catch (e, stackTrace) {
       logger.error(
@@ -111,10 +154,11 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
         final success = await sessionController.joinSession(sessionId);
 
         if (success && mounted) {
-          context.pushReplacementNamed(
-            AppRoutes.quizSession,
-            pathParameters: {'id': sessionId},
-          );
+          // Démarrer l'animation de transition
+          setState(() {
+            _isAnimating = true;
+          });
+          _animationController.forward();
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -144,6 +188,30 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
         setState(() => _isStartingGame = false);
       }
     }
+  }
+
+  void _navigateToQuizSession() {
+    if (!mounted) return;
+    // TODO
+    // final sessionController = Provider.of<QuizSessionController>(
+    //   context,
+    //   listen: false,
+    // );
+
+    // if (sessionController.currentSession != null) {
+    //   context.pushReplacementNamed(
+    //     AppRoutes.quizSession,
+    //     pathParameters: {'id': sessionController.currentSession!.id},
+    //   );
+    // } else {
+    //   setState(() {
+    //     _isAnimating = false;
+    //     _isStartingGame = false;
+    //   });
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text('Erreur lors du démarrage de la partie')),
+    //   );
+    // }
   }
 
   Future<void> _toggleReadyStatus() async {
@@ -210,149 +278,149 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
     });
   }
 
-  // Construction du menu latéral
-  Widget _buildSideNav(ThemeData theme, UserModel? user, bool isSmallScreen) {
-    final List<Map<String, dynamic>> menuItems = [
-      {
-        'icon': Icons.home_outlined,
-        'activeIcon': Icons.home,
-        'label': 'Accueil',
-        'route': AppRoutes.home,
-      },
-      {
-        'icon': Icons.groups_outlined,
-        'activeIcon': Icons.groups,
-        'label': 'Lobbys',
-        'route': AppRoutes.lobbies,
-        'isSelected': true,
-      },
-      {
-        'icon': Icons.leaderboard_outlined,
-        'activeIcon': Icons.leaderboard,
-        'label': 'Classement',
-        'route': null, // Non implémenté
-      },
-      {
-        'icon': Icons.add_circle_outlined,
-        'activeIcon': Icons.add_circle,
-        'label': 'Créer',
-        'route': AppRoutes.createLobby,
-      },
-      {
-        'icon': Icons.settings_outlined,
-        'activeIcon': Icons.settings,
-        'label': 'Paramètres',
-        'route': null, // Non implémenté
-      },
-    ];
-
-    return Container(
-      color: theme.colorScheme.surface,
-      child: Column(
-        children: [
-          // En-tête du menu avec avatar et nom de l'utilisateur
-          if (_isDrawerExpanded)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  AvatarPreview(
-                    avatarUrl:
-                        user?.photoUrl ?? 'assets/images/avatars/logo.png',
-                    backgroundColor: user?.avatarBackgroundColor,
-                    size: 80,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    user?.displayName ?? 'Utilisateur',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    user?.email ?? '',
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+  // Méthode pour supprimer le lobby (pour l'hôte uniquement)
+  Future<void> _deleteLobby() async {
+    // Demander une confirmation avant de supprimer
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Supprimer le lobby'),
+            content: const Text(
+              'Êtes-vous sûr de vouloir supprimer ce lobby ? Cette action est irréversible.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annuler'),
               ),
-            ),
-          if (!_isDrawerExpanded)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: AvatarPreview(
-                avatarUrl: user?.photoUrl ?? 'assets/images/avatars/logo.png',
-                backgroundColor: user?.avatarBackgroundColor,
-                size: 40,
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Supprimer'),
               ),
-            ),
-
-          const Divider(),
-
-          // Options de menu
-          Expanded(
-            child: ListView.builder(
-              itemCount: menuItems.length,
-              itemBuilder: (context, index) {
-                final item = menuItems[index];
-                final isSelected = item['isSelected'] ?? false;
-
-                return ListTile(
-                  leading: Icon(
-                    isSelected ? item['activeIcon'] : item['icon'],
-                    color:
-                        isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  title:
-                      _isDrawerExpanded
-                          ? Text(
-                            item['label'],
-                            style: TextStyle(
-                              color:
-                                  isSelected
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurfaceVariant,
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
-                          )
-                          : null,
-                  selected: isSelected,
-                  onTap: () {
-                    if (item['route'] != null) {
-                      context.goNamed(item['route']);
-                    }
-                  },
-                );
-              },
-            ),
+            ],
           ),
-
-          // Bouton pour replier/déplier le menu
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-              icon: Icon(
-                _isDrawerExpanded ? Icons.chevron_left : Icons.chevron_right,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isDrawerExpanded = !_isDrawerExpanded;
-                });
-              },
-              tooltip: _isDrawerExpanded ? 'Replier' : 'Déplier',
-            ),
-          ),
-        ],
-      ),
     );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLeavingLobby = true);
+
+    try {
+      final lobbyController = Provider.of<LobbyController>(
+        context,
+        listen: false,
+      );
+
+      final success = await lobbyController.deleteLobby(widget.lobbyId);
+
+      if (success && mounted) {
+        // Utiliser pushReplacementNamed au lieu de goNamed pour préserver l'état du menu
+        context.pushReplacementNamed(AppRoutes.lobbies);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la suppression du lobby'),
+          ),
+        );
+        setState(() => _isLeavingLobby = false);
+      }
+    } catch (e, stackTrace) {
+      logger.error(
+        'Erreur lors de la suppression du lobby : $e',
+        stackTrace: stackTrace,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la suppression du lobby'),
+          ),
+        );
+        setState(() => _isLeavingLobby = false);
+      }
+    }
+  }
+
+  // Méthode pour transférer la propriété du lobby à un autre joueur
+  Future<void> _transferOwnership(String newOwnerId, String playerName) async {
+    // Demander une confirmation avant de transférer la propriété
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Transférer la propriété'),
+            content: Text(
+              'Êtes-vous sûr de vouloir transférer la propriété du lobby à $playerName ?\n\n'
+              'Vous ne serez plus l\'hôte du lobby et ne pourrez plus le supprimer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+                child: const Text('Transférer'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLeavingLobby = true);
+
+    try {
+      final lobbyController = Provider.of<LobbyController>(
+        context,
+        listen: false,
+      );
+
+      final success = await lobbyController.transferOwnership(
+        widget.lobbyId,
+        newOwnerId,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('La propriété a été transférée à $playerName'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du transfert de propriété'),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.error(
+        'Erreur lors du transfert de propriété : $e',
+        stackTrace: stackTrace,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du transfert de propriété'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLeavingLobby = false);
+      }
+    }
   }
 
   @override
@@ -361,215 +429,266 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
     final currentUser = authService.currentUser;
     final UserModel? user = authService.currentUserModel;
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // Déterminer si le menu doit être replié par défaut sur les petits écrans
-    final bool isSmallScreen = screenWidth < 600;
 
     if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Utilisateur non connecté')),
-      );
+      return const Center(child: Text('Utilisateur non connecté'));
     }
 
-    return Scaffold(
-      body: Row(
-        children: [
-          // Menu latéral
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width:
-                isSmallScreen
-                    ? (_isDrawerExpanded ? 250 : 70)
-                    : (_isDrawerExpanded ? 250 : 70),
-            child: _buildSideNav(theme, user, isSmallScreen),
-          ),
+    if (_isAnimating) {
+      return _buildStartGameAnimation(theme);
+    }
 
-          // Ligne de séparation
-          VerticalDivider(width: 1, thickness: 1, color: theme.dividerColor),
+    return Consumer<LobbyController>(
+      builder: (context, lobbyController, child) {
+        final lobby = lobbyController.currentLobby;
+        final isLoading = lobbyController.isLoading;
+        final hasError = lobbyController.error != null;
 
-          // Contenu principal
-          Expanded(
-            child: Consumer<LobbyController>(
-              builder: (context, lobbyController, child) {
-                final lobby = lobbyController.currentLobby;
-                final isLoading = lobbyController.isLoading;
-                final hasError = lobbyController.error != null;
+        if (isLoading && lobby == null) {
+          return const LoadingDisplay(message: 'Chargement du lobby...');
+        }
 
-                if (isLoading && lobby == null) {
-                  return const LoadingDisplay(
-                    message: 'Chargement du lobby...',
-                  );
-                }
+        if (hasError) {
+          return ErrorDisplay(
+            title: 'Erreur de chargement',
+            message: lobbyController.error ?? 'Une erreur est survenue',
+            onRetry: _joinLobbyStream,
+            onBack: () => context.go('/home/lobbies'),
+          );
+        }
 
-                if (hasError) {
-                  return ErrorDisplay(
-                    title: 'Erreur de chargement',
-                    message: lobbyController.error ?? 'Une erreur est survenue',
-                    onRetry: _joinLobbyStream,
-                    onBack: () => context.goNamed(AppRoutes.lobbies),
-                  );
-                }
+        if (lobby == null) {
+          return ErrorDisplay(
+            title: 'Lobby introuvable',
+            message: 'Ce lobby n\'existe pas ou a été supprimé',
+            onBack: () => context.go('/home/lobbies'),
+          );
+        }
 
-                if (lobby == null) {
-                  return ErrorDisplay(
-                    title: 'Lobby introuvable',
-                    message: 'Ce lobby n\'existe pas ou a été supprimé',
-                    onBack: () => context.goNamed(AppRoutes.lobbies),
-                  );
-                }
+        final isHost = lobby.hostId == currentUser.uid;
+        final currentPlayer = lobby.players.firstWhere(
+          (p) => p.userId == currentUser.uid,
+          orElse:
+              () => LobbyPlayerModel(
+                userId: currentUser.uid,
+                displayName: currentUser.displayName!,
+                avatarUrl: currentUser.photoURL ?? '',
+                isHost: false,
+                isReady: false,
+                joinedAt: DateTime.now(),
+              ),
+        );
 
-                final isHost = lobby.hostId == currentUser.uid;
-                final currentPlayer = lobby.players.firstWhere(
-                  (p) => p.userId == currentUser.uid,
-                  orElse:
-                      () => LobbyPlayerModel(
-                        userId: currentUser.uid,
-                        displayName: currentUser.displayName!,
-                        avatarUrl: currentUser.photoURL ?? '',
-                        isHost: false,
-                        isReady: false,
-                        joinedAt: DateTime.now(),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Informations du lobby (en haut)
+            _buildLobbyHeader(context, lobby),
+
+            // Conteneur pour le reste du contenu avec défilement
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Liste des joueurs
+                    SectionHeader(
+                      title:
+                          'Joueurs (${lobby.players.length}/${lobby.maxPlayers})',
+                      action: Text(
+                        '${lobby.minPlayers} minimum pour démarrer',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                );
-
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Informations du lobby
-                      _buildLobbyHeader(context, lobby),
-                      const SizedBox(height: 24),
-
-                      // Liste des joueurs
-                      SectionHeader(
-                        title:
-                            'Joueurs (${lobby.players.length}/${lobby.maxPlayers})',
-                        action: Text(
-                          '${lobby.minPlayers} minimum pour démarrer',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: lobby.players.length,
-                        itemBuilder: (context, index) {
-                          final player = lobby.players[index];
-                          return _buildPlayerItem(
-                            context,
-                            player,
-                            isHost,
-                            player.userId == currentUser.uid,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Boutons d'action
-                      _buildActionButtons(
-                        context,
-                        lobby,
-                        isHost,
-                        currentPlayer.isReady,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                    const SizedBox(height: 16),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: lobby.players.length,
+                      itemBuilder: (context, index) {
+                        final player = lobby.players[index];
+                        return _buildPlayerItem(
+                          context,
+                          player,
+                          isHost,
+                          player.userId == currentUser.uid,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+
+            // Boutons d'action (en bas)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildActionButtons(
+                context,
+                lobby,
+                isHost,
+                currentPlayer.isReady,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildLobbyHeader(BuildContext context, LobbyModel lobby) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  lobby.visibility == LobbyVisibility.private
-                      ? Icons.lock
-                      : Icons.public,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    lobby.name,
-                    style: theme.textTheme.titleLarge,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+  // Widget pour l'animation de démarrage du quiz
+  Widget _buildStartGameAnimation(ThemeData theme) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Scaffold(
+          backgroundColor: theme.colorScheme.surface,
+          body: Stack(
+            children: [
+              // Cercle animé qui grandit
+              Center(
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(
-                  _getCategoryIcon(lobby.category),
-                  size: 16,
-                  color: theme.colorScheme.secondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Catégorie: ${lobby.category}',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Code d'accès (si privé)
-            if (lobby.visibility == LobbyVisibility.private &&
-                lobby.accessCode != null &&
-                lobby.accessCode!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => _copyLobbyCode(lobby.accessCode!),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+              ),
+              // Texte qui apparaît progressivement
+              Center(
+                child: Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      const Icon(
+                        Icons.play_arrow,
+                        size: 80,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Code: ${lobby.accessCode}',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 16,
+                        'C\'est parti !',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.copy,
-                        size: 16,
-                        color: theme.colorScheme.primary,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Préparez-vous, le quiz commence...',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ],
-          ],
-        ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLobbyHeader(BuildContext context, LobbyModel lobby) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withAlpha((255 * 0.1).toInt()),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                lobby.visibility == LobbyVisibility.private
+                    ? Icons.lock
+                    : Icons.public,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lobby.name,
+                  style: theme.textTheme.titleLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // Code d'accès (si privé)
+              if (lobby.visibility == LobbyVisibility.private &&
+                  lobby.accessCode.isNotEmpty)
+                InkWell(
+                  onTap: () => _copyLobbyCode(lobby.accessCode),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Code: ${lobby.accessCode}',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.copy,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                _getCategoryIcon(lobby.category),
+                size: 16,
+                color: theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Catégorie: ${lobby.category}',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -603,7 +722,18 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: AvatarDisplay(avatarUrl: player.avatarUrl, size: 40),
+        leading: AvatarDisplay(
+          avatarUrl: player.avatarUrl,
+          backgroundColor:
+              player.avatarBackgroundColor != null
+                  ? Color(
+                    int.parse(
+                      player.avatarBackgroundColor!.replaceFirst('#', '0xff'),
+                    ),
+                  )
+                  : null, // Ajout de la couleur de fond
+          size: 40,
+        ),
         title: Row(
           children: [
             Expanded(
@@ -619,12 +749,8 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
             ),
             if (player.isHost)
               Tooltip(
-                message: 'Hôte',
-                child: Icon(
-                  Icons.star,
-                  size: 16,
-                  color: theme.colorScheme.secondary,
-                ),
+                message: 'Propriétaire du lobby',
+                child: Icon(Icons.star, size: 18, color: Colors.amber),
               ),
           ],
         ),
@@ -670,6 +796,20 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
                 tooltip: 'Expulser',
                 visualDensity: VisualDensity.compact,
               ),
+
+            // Bouton de transfert de propriété (visible pour l'hôte uniquement)
+            if (isHost && !player.isHost)
+              IconButton(
+                onPressed:
+                    () => _transferOwnership(player.userId, player.displayName),
+                icon: Icon(
+                  Icons.admin_panel_settings,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                tooltip: 'Transférer la propriété',
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
       ),
@@ -683,6 +823,7 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
     bool isReady,
   ) {
     final canStart = lobby.canStart && isHost;
+    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -719,6 +860,47 @@ class _LobbyDetailViewState extends State<LobbyDetailView> {
                       : Theme.of(context).colorScheme.primary,
             ),
           ),
+
+        const SizedBox(height: 8),
+
+        // Bouton pour quitter le lobby (pour tous les joueurs)
+        OutlinedButton.icon(
+          onPressed: _isLeavingLobby ? null : _leaveLobby,
+          icon:
+              _isLeavingLobby
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.exit_to_app),
+          label: const Text('Quitter le lobby'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+
+        // Bouton pour supprimer le lobby (uniquement pour l'hôte)
+        if (isHost) ...[
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _isLeavingLobby ? null : _deleteLobby,
+            icon:
+                _isLeavingLobby
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.delete_forever),
+            label: const Text('Supprimer le lobby'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              foregroundColor: theme.colorScheme.error,
+            ),
+          ),
+        ],
+
         if (isHost &&
             !canStart &&
             lobby.players.length >= lobby.minPlayers) ...[

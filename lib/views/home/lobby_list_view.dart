@@ -3,6 +3,7 @@
 ///
 /// Vue qui affiche la liste des lobbies publics disponibles
 /// Permet aux utilisateurs de parcourir, filtrer et rejoindre des lobbies
+library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +12,6 @@ import 'package:quizzzed/controllers/lobby_controller.dart';
 import 'package:quizzzed/models/quiz/lobby_model.dart';
 import 'package:quizzzed/routes/app_routes.dart';
 import 'package:quizzzed/services/auth_service.dart';
-import 'package:quizzzed/theme/theme_service.dart';
 import 'package:quizzzed/widgets/home/lobby_card.dart';
 import 'package:quizzzed/widgets/shared/empty_state.dart';
 import 'package:quizzzed/widgets/shared/error_display.dart';
@@ -19,7 +19,7 @@ import 'package:quizzzed/widgets/shared/loading_display.dart';
 import 'package:quizzzed/widgets/shared/section_header.dart';
 
 class LobbyListView extends StatefulWidget {
-  const LobbyListView({Key? key}) : super(key: key);
+  const LobbyListView({super.key});
 
   @override
   State<LobbyListView> createState() => _LobbyListViewState();
@@ -29,12 +29,21 @@ class _LobbyListViewState extends State<LobbyListView> {
   bool _isRefreshing = false;
   String _selectedCategory = 'Tous';
   List<String> _categories = ['Tous'];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  bool _showSearch = false;
 
   @override
   void initState() {
     super.initState();
     // Chargement initial des catégories
     _updateCategoriesFromLobbies();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // Méthode pour mettre à jour les catégories à partir des lobbies existants
@@ -112,9 +121,29 @@ class _LobbyListViewState extends State<LobbyListView> {
     );
   }
 
+  void _toggleSearch() {
+    setState(() {
+      _showSearch = !_showSearch;
+      if (!_showSearch) {
+        _searchQuery = '';
+        _searchController.clear();
+      } else {
+        FocusScope.of(context).requestFocus(FocusNode());
+        Future.delayed(const Duration(milliseconds: 100), () {
+          FocusScope.of(context).requestFocus(FocusNode());
+        });
+      }
+    });
+  }
+
+  void _updateSearchQuery(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context);
     final authService = Provider.of<AuthService>(context);
     final currentUser = authService.currentUser;
 
@@ -143,27 +172,41 @@ class _LobbyListViewState extends State<LobbyListView> {
               );
             }
 
-            // Filtrer par catégorie si besoin
+            // Filtrer par catégorie et terme de recherche
             final filteredLobbies =
-                _selectedCategory == 'Tous'
-                    ? lobbies
-                    : lobbies
-                        .where((l) => l.category == _selectedCategory)
-                        .toList();
+                lobbies
+                    .where(
+                      (lobby) =>
+                          (_selectedCategory == 'Tous' ||
+                              lobby.category == _selectedCategory) &&
+                          (_searchQuery.isEmpty ||
+                              lobby.name.toLowerCase().contains(_searchQuery) ||
+                              lobby.category.toLowerCase().contains(
+                                _searchQuery,
+                              )),
+                    )
+                    .toList();
 
             if (filteredLobbies.isEmpty) {
               // Afficher le menu horizontal en haut et le message d'état vide
               return Column(
                 children: [
                   _buildHorizontalActionsMenu(context),
+                  if (_showSearch) _buildSearchBar(),
+                  _buildCategoryFilter(),
                   Expanded(
                     child: EmptyState(
                       title: 'Aucun lobby disponible',
                       message:
-                          _selectedCategory == 'Tous'
+                          _searchQuery.isNotEmpty
+                              ? 'Aucun lobby ne correspond à votre recherche'
+                              : _selectedCategory == 'Tous'
                               ? 'Aucun lobby public n\'est disponible pour le moment'
                               : 'Aucun lobby disponible dans cette catégorie',
-                      icon: Icons.public_off,
+                      icon:
+                          _searchQuery.isNotEmpty
+                              ? Icons.search_off
+                              : Icons.public_off,
                       actionText: 'Créer un lobby',
                       onAction: () => context.pushNamed(AppRoutes.createLobby),
                     ),
@@ -174,8 +217,14 @@ class _LobbyListViewState extends State<LobbyListView> {
 
             return Column(
               children: [
-                // Nouveau menu horizontal d'actions
+                // Menu horizontal d'actions
                 _buildHorizontalActionsMenu(context),
+
+                // Barre de recherche (conditionnelle)
+                if (_showSearch) _buildSearchBar(),
+
+                // Filtre par catégorie
+                _buildCategoryFilter(),
 
                 // Liste des lobbies
                 Expanded(
@@ -207,7 +256,40 @@ class _LobbyListViewState extends State<LobbyListView> {
     );
   }
 
-  // Nouveau widget pour le menu horizontal d'actions
+  // Widget pour la barre de recherche
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _updateSearchQuery,
+        decoration: InputDecoration(
+          hintText: 'Rechercher un lobby...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon:
+              _searchQuery.isNotEmpty
+                  ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      _updateSearchQuery('');
+                    },
+                  )
+                  : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+        ),
+        textInputAction: TextInputAction.search,
+        autofocus: true,
+      ),
+    );
+  }
+
+  // Widget pour le menu horizontal d'actions
   Widget _buildHorizontalActionsMenu(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -217,7 +299,7 @@ class _LobbyListViewState extends State<LobbyListView> {
         color: theme.scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.1),
+            color: theme.shadowColor.withAlpha((0.1 * 255).toInt()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -251,6 +333,14 @@ class _LobbyListViewState extends State<LobbyListView> {
           ),
           const SizedBox(width: 12),
 
+          // Bouton de recherche
+          IconButton(
+            onPressed: _toggleSearch,
+            icon: Icon(_showSearch ? Icons.search_off : Icons.search),
+            tooltip:
+                _showSearch ? 'Masquer la recherche' : 'Rechercher un lobby',
+          ),
+
           // Bouton pour rafraîchir
           IconButton(
             onPressed: _isRefreshing ? null : _loadLobbies,
@@ -271,7 +361,7 @@ class _LobbyListViewState extends State<LobbyListView> {
 
   Widget _buildCategoryFilter() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

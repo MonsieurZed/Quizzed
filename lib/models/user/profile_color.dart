@@ -2,6 +2,7 @@
 ///
 /// Représente une couleur disponible pour le fond du profil utilisateur
 /// Utilisé dans la sélection de couleur pour l'avatar
+library;
 
 import 'package:flutter/material.dart';
 
@@ -50,7 +51,7 @@ class ProfileColor {
   /// Obtient une couleur de profil à partir d'un code couleur
   static ProfileColor? fromColor(Color color) {
     try {
-      return availableColors.firstWhere((c) => c.color.value == color.value);
+      return availableColors.firstWhere((c) => c.color == color);
     } catch (e) {
       return null;
     }

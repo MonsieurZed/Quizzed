@@ -2,13 +2,14 @@
 ///
 /// Interface permettant d'accéder aux outils de débogage de l'application
 /// comme le visualiseur de logs, les états des services et des options de test
+library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/services/logger_service.dart';
 import 'package:quizzzed/widgets/debug/log_viewer_widget.dart';
 
 class DebugView extends StatefulWidget {
-  const DebugView({Key? key}) : super(key: key);
+  const DebugView({super.key});
 
   @override
   State<DebugView> createState() => _DebugViewState();

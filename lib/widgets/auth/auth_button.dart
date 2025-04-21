@@ -2,6 +2,7 @@
 ///
 /// Un bouton personnalisé avec affichage d'état de chargement
 /// pour les actions d'authentification
+library;
 
 import 'package:flutter/material.dart';
 

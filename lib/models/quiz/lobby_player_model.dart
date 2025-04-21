@@ -2,6 +2,7 @@
 ///
 /// Modèle représentant un joueur dans un lobby de quiz
 /// Contient les informations sur le joueur et son statut
+library;
 
 import 'package:flutter/material.dart';
 
@@ -45,8 +46,7 @@ class LobbyPlayerModel {
       'id': id,
       'displayName': displayName,
       'photoUrl': photoUrl,
-      'avatarBackgroundColor':
-          avatarBackgroundColor != null ? avatarBackgroundColor!.value : null,
+      'avatarBackgroundColor': avatarBackgroundColor,
       'status': status == LobbyPlayerStatus.ready ? 'ready' : 'waiting',
     };
   }

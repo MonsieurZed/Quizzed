@@ -2,6 +2,7 @@
 ///
 /// Un champ de texte personnalisé pour les formulaires d'authentification
 /// avec validation et gestion des erreurs intégrées
+library;
 
 import 'package:flutter/material.dart';
 
@@ -75,7 +76,7 @@ class AuthTextField extends StatelessWidget {
             borderSide: BorderSide(color: theme.colorScheme.error),
           ),
           filled: true,
-          fillColor: theme.colorScheme.surfaceVariant.withAlpha(
+          fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(
             (255 * 0.3).toInt(),
           ),
           contentPadding: const EdgeInsets.symmetric(

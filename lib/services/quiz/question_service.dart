@@ -3,6 +3,7 @@
 /// Fournit les fonctionnalités pour interagir avec les questions dans Firestore
 /// - Création, récupération, mise à jour et suppression de questions
 /// - Gestion des réponses associées
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';

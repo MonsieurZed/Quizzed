@@ -1,6 +1,7 @@
 /// Modèle de score
 ///
 /// Représente le résultat d'un utilisateur à un quiz
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 

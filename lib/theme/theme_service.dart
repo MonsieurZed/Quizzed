@@ -2,6 +2,7 @@
 ///
 /// Gère l'apparence visuelle de l'application
 /// Fournit les thèmes clair/sombre et les styles communs
+library;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,13 +41,12 @@ class ThemeService extends ChangeNotifier {
       tertiary: tertiarySeedColor,
       error: errorColor,
       brightness: Brightness.light,
-      background: backgroundColorLight,
       // Paramètres additionnels pour personnaliser chaque teinte
       primaryContainer: primarySeedColor.withAlpha((255 * 0.1).toInt()),
       secondaryContainer: secondarySeedColor.withAlpha((255 * 0.1).toInt()),
       tertiaryContainer: tertiarySeedColor.withAlpha((255 * 0.1).toInt()),
       surface: Colors.white,
-      surfaceTint: primarySeedColor.withOpacity(0.05),
+      surfaceTint: primarySeedColor.withAlpha((255 * 0.05).toInt()),
     ),
     scaffoldBackgroundColor: backgroundColorLight,
     cardTheme: const CardTheme(
@@ -88,7 +88,6 @@ class ThemeService extends ChangeNotifier {
       tertiary: tertiarySeedColor,
       error: errorColor,
       brightness: Brightness.dark,
-      background: backgroundColorDark,
       // Paramètres additionnels pour personnaliser chaque teinte
       primaryContainer: primarySeedColor.withAlpha((255 * 0.3).toInt()),
       secondaryContainer: secondarySeedColor.withAlpha((255 * 0.3).toInt()),

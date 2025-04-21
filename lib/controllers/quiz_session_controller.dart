@@ -2,6 +2,7 @@
 ///
 /// Contrôleur responsable de la gestion des sessions de quiz en cours
 /// Gestion des états de la partie, des questions, des réponses et des scores
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

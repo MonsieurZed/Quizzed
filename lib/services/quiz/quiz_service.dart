@@ -2,6 +2,7 @@
 ///
 /// Gère les opérations CRUD pour les quiz, questions et réponses
 /// via Firebase Firestore
+library;
 
 import 'dart:async';
 

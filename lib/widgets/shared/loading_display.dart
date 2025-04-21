@@ -2,6 +2,7 @@
 /// Loading Display
 ///
 /// Widget pour afficher une animation de chargement avec un message optionnel
+library;
 
 import 'package:flutter/material.dart';
 
@@ -9,8 +10,7 @@ class LoadingDisplay extends StatelessWidget {
   final String? message;
   final double size;
 
-  const LoadingDisplay({Key? key, this.message, this.size = 40.0})
-    : super(key: key);
+  const LoadingDisplay({super.key, this.message, this.size = 40.0});
 
   @override
   Widget build(BuildContext context) {

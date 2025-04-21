@@ -1,6 +1,7 @@
 /// Service de gestion des scores
 ///
 /// Gère l'enregistrement des scores et la récupération des classements
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -212,7 +213,7 @@ class ScoreService extends ChangeNotifier {
         'totalQuestions': totalQuestions,
         'successRate': successRate,
       };
-    } catch (e, stackTrace) {
+    } catch (e) {
       logger.error(
         'Erreur lors de la récupération des statistiques de l\'utilisateur: $e',
       );

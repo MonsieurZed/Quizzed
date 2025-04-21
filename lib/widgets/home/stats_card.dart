@@ -2,6 +2,7 @@
 ///
 /// Carte affichant les statistiques principales de l'utilisateur
 /// comme son score et le nombre de quiz complétés
+library;
 
 import 'package:flutter/material.dart';
 

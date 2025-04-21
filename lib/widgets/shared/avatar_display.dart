@@ -3,6 +3,7 @@
 ///
 /// Widget pour afficher l'avatar d'un utilisateur avec différentes options
 /// de présentation et de taille
+library;
 
 import 'package:flutter/material.dart';
 
@@ -17,7 +18,7 @@ class AvatarDisplay extends StatelessWidget {
   final bool isMuted;
 
   const AvatarDisplay({
-    Key? key,
+    super.key,
     this.avatarUrl,
     this.backgroundColor,
     this.size = 40.0,
@@ -26,14 +27,13 @@ class AvatarDisplay extends StatelessWidget {
     this.borderWidth = 2.0,
     this.isOnline = false,
     this.isMuted = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final defaultBorderColor = borderColor ?? theme.colorScheme.primary;
-    final defaultBackgroundColor =
-        backgroundColor ?? theme.colorScheme.background;
+    final defaultBackgroundColor = backgroundColor ?? theme.colorScheme.surface;
 
     return Stack(
       children: [

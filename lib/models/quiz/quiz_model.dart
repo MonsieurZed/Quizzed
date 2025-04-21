@@ -1,6 +1,7 @@
 /// Modèle de quiz
 ///
 /// Représente les informations de base d'un quiz
+library;
 
 class QuizModel {
   final String id;

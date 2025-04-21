@@ -1,6 +1,7 @@
 /// Modèle de question
 ///
 /// Représente une question dans un quiz avec son texte et ses options de réponse
+library;
 
 import 'package:quizzzed/models/quiz/answer_model.dart';
 

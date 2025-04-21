@@ -3,6 +3,7 @@
 /// Affiche l'avatar de l'utilisateur avec la couleur de fond sélectionnée
 /// Utilisé pour prévisualiser les changements dans l'édition de profil
 /// L'image peut déborder légèrement du cercle pour un effet visuel plus dynamique
+library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/config/app_config.dart';
@@ -16,14 +17,14 @@ class AvatarPreview extends StatelessWidget {
   final bool allowOverflow;
 
   const AvatarPreview({
-    Key? key,
+    super.key,
     this.avatarUrl,
     this.backgroundColor,
     this.size = 80.0,
     this.showBorder = true,
     this.allowOverflow =
         true, // Nouvelle propriété pour contrôler le débordement
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +48,7 @@ class AvatarPreview extends StatelessWidget {
                 ? Border.all(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onBackground.withAlpha((255 * 0.2).toInt()),
+                  ).colorScheme.onSurface.withAlpha((255 * 0.2).toInt()),
                   width: 2,
                 )
                 : null,

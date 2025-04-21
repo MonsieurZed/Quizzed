@@ -1,5 +1,10 @@
 # 📚 Documentation Quizzzed
 
+> **⚠️ IMPORTANT : Navigation et Structure d'interface**  
+> Toutes les interfaces de l'application doivent impérativement conserver le menu latéral affiché.  
+> Pour la navigation entre vues, il est essentiel d'utiliser `pushReplacementNamed` au lieu de `goNamed`  
+> afin de préserver l'affichage du menu et maintenir la cohérence de l'expérience utilisateur.
+
 ## 🧱 Structure du Projet
 
 ```
@@ -151,6 +156,47 @@ Le système de routage utilise `go_router` pour gérer:
 - La navigation entre les pages
 - Les paramètres de route
 - Écran d'accueil avec délai de redirection
+
+### Architecture ShellRoute pour le menu persistant
+
+Une architecture de navigation avancée a été implémentée pour garantir la persistance du menu latéral dans toutes les vues de l'application:
+
+- **Shell Route Pattern**: Utilisation du pattern "Shell Route" de go_router où une vue parente (HomeView) contient le menu latéral et reçoit le contenu des vues enfants
+- **Structure des routes**:
+
+  ```
+  ShellRoute (HomeView)
+  ├── /home → HomeContent
+  ├── /home/lobbies → LobbiesView
+  │   └── /home/lobbies/:id → LobbyDetailView
+  ├── /home/create → CreateLobbyView
+  ├── /home/leaderboard → LeaderboardView
+  └── /home/settings → SettingsContent
+  ```
+
+- **Séparation des responsabilités**:
+  - `HomeView`: Agit uniquement comme conteneur (shell) avec le menu latéral
+  - Vues de contenu comme `HomeContent`, `LobbiesView`: Rendent uniquement le contenu spécifique
+- **Gestion de l'état du menu**:
+  - L'état d'expansion du menu (étendu/compact) est conservé lors de la navigation
+  - L'élément actif du menu est déterminé automatiquement en fonction de l'URL actuelle
+- **Navigation correcte**:
+
+  - Utilisation de `context.go()` pour naviguer entre les routes imbriquées
+  - Les transitions sont fluides sans rechargement du menu
+
+- **Avantages de cette architecture**:
+  - Résolution permanente du problème de menu disparaissant lors de la navigation
+  - Code plus modulaire avec une séparation claire des composants
+  - Expérience utilisateur cohérente entre toutes les sections
+  - Réduction de la duplication de code par factorisation du menu
+
+### Bonnes pratiques de navigation
+
+- Éviter d'implémenter des menus latéraux indépendants dans les vues enfants
+- Utiliser la navigation imbriquée (`context.go('/home/lobbies')`) plutôt que des remplacements complets
+- Respecter la séparation des responsabilités entre le conteneur et les vues de contenu
+- Maintenir la structure de routes cohérente avec l'architecture UI
 
 ## 🛠️ Fonctionnalités de développement
 
@@ -338,3 +384,97 @@ L'application est configurée pour être déployée sur Firebase:
 - Interface de jeu
 - Logique de temps et de score
 - Enregistrement des résultats
+
+## 📋 Fonctionnalités spécifiques implémentées
+
+### Système de Lobby
+
+Le développement du système de lobby a été complété avec les fonctionnalités suivantes :
+
+#### Modèles et contrôleurs
+
+- `LobbyModel` et `LobbyPlayerModel` pour représenter les lobbies et leurs joueurs
+- `LobbyController` et `QuizSessionController` pour gérer la logique métier
+
+#### Fonctionnalités de base
+
+- Création de lobbies publics et privés avec paramètres configurables
+- Affichage de la liste des lobbies publics disponibles
+- Filtrage des lobbies par catégorie
+- Rejoindre un lobby public ou privé (avec code d'accès)
+- Interface détaillée d'un lobby avec liste des joueurs
+
+#### Fonctionnalités avancées
+
+1. **Affichage optimisé des joueurs**
+
+   - Indicateurs visuels clairs pour les joueurs prêts/en attente
+   - Animation de pulsation pour les joueurs en attente
+   - Point vert pour indiquer les joueurs actifs récemment
+
+2. **Moteur de recherche de lobby**
+
+   - Barre de recherche par nom ou catégorie
+   - Toggle pour afficher/masquer la recherche
+   - Messages adaptés lorsqu'aucun résultat n'est trouvé
+
+3. **Gestion de l'activité des joueurs**
+
+   - Détection automatique des joueurs déconnectés
+   - Suppression des joueurs inactifs après 3 minutes
+   - Suppression des lobbies inactifs après une heure
+
+4. **Animation lors du démarrage d'un quiz**
+
+   - Animation de cercle qui s'agrandit à partir du centre
+   - Texte apparaissant progressivement
+   - Transition fluide vers la vue de session de quiz
+
+5. **Gestion des erreurs**
+
+   - Correction des défauts d'interface pendant la phase de build
+   - Optimisation du système de notification avec Future.microtask
+   - Meilleure gestion des exceptions
+
+6. **Contrôle des lobbies**
+
+   - Bouton de suppression de lobby pour l'hôte avec confirmation
+   - Limite d'un seul lobby actif par utilisateur pour éviter la prolifération
+   - Dialogue de confirmation pour les actions destructives (supprimer un lobby)
+   - Séparation claire des actions de sortie et de suppression
+
+7. **Génération de noms aléatoires pour les lobbies**
+
+   - Bouton de génération automatique de noms créatifs pour les lobbies
+   - Dictionnaires d'adjectifs et de substantifs stockés dans `assets/dictionary/`
+   - Combinaison intelligente produisant des noms comme "Mythique Challenge" ou "Épique Tournoi"
+   - Interface intuitive avec bouton de rafraîchissement à côté du champ de nom
+   - Architecture flexible permettant d'étendre facilement les dictionnaires
+
+8. **Synchronisation des profils dans les lobbies**
+   - Mise à jour automatique des informations utilisateur dans tous les lobbies lorsque le profil est modifié
+   - Synchronisation de l'avatar, du nom d'affichage et de la couleur de fond
+   - Système robuste qui conserve la cohérence visuelle à travers l'application
+   - Implémentation efficace pour minimiser les opérations de base de données
+
+Les améliorations ont rendu le système plus robuste, avec une meilleure expérience utilisateur grâce à des animations fluides, une interface responsive et une gestion efficace des joueurs inactifs.
+
+## 📂 Structure des fichiers de ressources
+
+### Dictionnaires pour la génération de noms
+
+L'application utilise des dictionnaires JSON stockés dans `assets/dictionary/` pour générer des noms de lobbies aléatoires :
+
+- **adjectifs.json** : Liste de 40 adjectifs descriptifs en français
+- **names.json** : Liste de 40 substantifs liés aux quiz et défis
+
+Ces dictionnaires permettent de créer automatiquement des noms de lobbies créatifs et engageants. L'architecture modulaire permet d'étendre facilement ces listes sans modifier le code source.
+
+### Avatars
+
+Les avatars sont organisés dans deux dossiers :
+
+- **assets/images/avatars/** : Avatars en résolution standard pour l'interface principale
+- **assets/images/avatars1024/** : Avatars en haute résolution pour les prévisualisations détaillées
+
+L'application explore dynamiquement ces dossiers pour offrir aux utilisateurs un large choix d'avatars personnalisés.

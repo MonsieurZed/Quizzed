@@ -3,6 +3,7 @@
 ///
 /// Widget pour afficher un en-tête de section avec un titre
 /// et éventuellement un bouton d'action
+library;
 
 import 'package:flutter/material.dart';
 
@@ -13,12 +14,12 @@ class SectionHeader extends StatelessWidget {
   final TextStyle? textStyle;
 
   const SectionHeader({
-    Key? key,
+    super.key,
     required this.title,
     this.action,
     this.padding = EdgeInsets.zero,
     this.textStyle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

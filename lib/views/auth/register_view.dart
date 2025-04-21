@@ -2,6 +2,7 @@
 ///
 /// Page permettant aux utilisateurs de créer un compte
 /// dans l'application avec email et mot de passe
+library;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -133,7 +134,7 @@ class _RegisterViewState extends State<RegisterView> {
         if (mounted && context.mounted) {
           context.go('/home');
         }
-      } on FirebaseAuthException catch (e, stackTrace) {
+      } on FirebaseAuthException catch (e) {
         setState(() {
           switch (e.code) {
             case 'email-already-in-use':
@@ -152,7 +153,7 @@ class _RegisterViewState extends State<RegisterView> {
               _errorMessage = 'Erreur d\'inscription: ${e.message}';
           }
         });
-      } catch (e, stackTrace) {
+      } catch (e) {
         setState(() {
           _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
         });

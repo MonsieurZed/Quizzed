@@ -2,6 +2,7 @@
 ///
 /// Modèle représentant un lobby de quiz
 /// Contient les informations sur le lobby, ses paramètres et ses joueurs
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quizzzed/config/app_config.dart';
@@ -234,6 +235,8 @@ class LobbyPlayerModel {
   final String userId;
   final String displayName;
   final String avatarUrl;
+  final String?
+  avatarBackgroundColor; // Ajout de la couleur de fond pour l'avatar
   final bool isHost;
   final bool isReady;
   final DateTime joinedAt;
@@ -243,6 +246,7 @@ class LobbyPlayerModel {
     required this.userId,
     required this.displayName,
     required this.avatarUrl,
+    this.avatarBackgroundColor, // Couleur de fond optionnelle
     required this.isHost,
     required this.isReady,
     required this.joinedAt,
@@ -254,6 +258,8 @@ class LobbyPlayerModel {
       userId: user.uid,
       displayName: user.displayName!,
       avatarUrl: user.photoUrl!,
+      avatarBackgroundColor:
+          user.avatarBackgroundColor, // Récupération de la couleur depuis le modèle utilisateur
       isHost: isHost,
       isReady: isHost, // L'hôte est automatiquement prêt
       joinedAt: DateTime.now(),
@@ -266,6 +272,8 @@ class LobbyPlayerModel {
       userId: data['userId'] ?? '',
       displayName: data['displayName'] ?? '',
       avatarUrl: data['avatarUrl'] ?? '',
+      avatarBackgroundColor:
+          data['avatarBackgroundColor'], // Récupération de la couleur depuis la map
       isHost: data['isHost'] ?? false,
       isReady: data['isReady'] ?? false,
       joinedAt: (data['joinedAt'] as Timestamp).toDate(),
@@ -281,6 +289,8 @@ class LobbyPlayerModel {
       'userId': userId,
       'displayName': displayName,
       'avatarUrl': avatarUrl,
+      'avatarBackgroundColor':
+          avatarBackgroundColor, // Ajout de la couleur à la map
       'isHost': isHost,
       'isReady': isReady,
       'joinedAt': Timestamp.fromDate(joinedAt),
@@ -292,6 +302,7 @@ class LobbyPlayerModel {
     String? userId,
     String? displayName,
     String? avatarUrl,
+    String? avatarBackgroundColor, // Ajout de la couleur au copyWith
     bool? isHost,
     bool? isReady,
     DateTime? joinedAt,
@@ -301,6 +312,8 @@ class LobbyPlayerModel {
       userId: userId ?? this.userId,
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarBackgroundColor:
+          avatarBackgroundColor ?? this.avatarBackgroundColor,
       isHost: isHost ?? this.isHost,
       isReady: isReady ?? this.isReady,
       joinedAt: joinedAt ?? this.joinedAt,

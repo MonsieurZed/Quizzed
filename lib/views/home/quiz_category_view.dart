@@ -3,6 +3,7 @@
 ///
 /// Affiche la liste des quiz d'une catégorie spécifique
 /// Permet de filtrer les quiz par difficulté et de les trier
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

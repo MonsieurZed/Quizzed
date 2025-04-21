@@ -1,9 +1,9 @@
-/**
- * Firebase Service
- * 
- * Service principal pour l'initialisation et la gestion des connexions Firebase
- * Gère Firebase Auth, Firestore et Storage
- */
+/// Firebase Service
+///
+/// Service principal pour l'initialisation et la gestion des connexions Firebase
+/// Gère Firebase Auth, Firestore et Storage
+library;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

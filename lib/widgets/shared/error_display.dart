@@ -3,6 +3,7 @@
 ///
 /// Widget pour afficher un message d'erreur avec des options pour réessayer
 /// ou revenir en arrière
+library;
 
 import 'package:flutter/material.dart';
 
@@ -13,12 +14,12 @@ class ErrorDisplay extends StatelessWidget {
   final VoidCallback? onBack;
 
   const ErrorDisplay({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.onRetry,
     this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

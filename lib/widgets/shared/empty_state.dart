@@ -3,6 +3,7 @@
 ///
 /// Widget pour afficher un état vide avec un message et une action optionnelle
 /// Utilisé lorsqu'une liste ne contient aucun élément ou qu'une recherche ne donne pas de résultat
+library;
 
 import 'package:flutter/material.dart';
 
@@ -14,13 +15,13 @@ class EmptyState extends StatelessWidget {
   final VoidCallback? onAction;
 
   const EmptyState({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.icon = Icons.sentiment_dissatisfied,
     this.actionText,
     this.onAction,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

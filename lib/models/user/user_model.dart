@@ -2,6 +2,7 @@
 ///
 /// Classe qui représente un utilisateur de l'application
 /// Utilisée pour la gestion des profils et de l'authentification
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 

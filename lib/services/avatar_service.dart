@@ -2,6 +2,7 @@
 ///
 /// Ce service permet de récupérer la liste des avatars disponibles
 /// et de gérer la sélection des avatars pour les utilisateurs
+library;
 
 import 'dart:convert';
 

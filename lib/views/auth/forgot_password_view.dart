@@ -2,6 +2,7 @@
 ///
 /// Page permettant aux utilisateurs de demander une réinitialisation
 /// de mot de passe en entrant leur adresse email
+library;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         setState(() {
           _emailSent = true;
         });
-      } on FirebaseAuthException catch (e, stackTrace) {
+      } on FirebaseAuthException catch (e) {
         setState(() {
           switch (e.code) {
             case 'user-not-found':
@@ -64,7 +65,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               _errorMessage = 'Erreur de réinitialisation: ${e.message}';
           }
         });
-      } catch (e, stackTrace) {
+      } catch (e) {
         setState(() {
           _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
         });

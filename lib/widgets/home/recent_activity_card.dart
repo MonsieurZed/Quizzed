@@ -2,6 +2,7 @@
 ///
 /// Affiche les informations d'un quiz populaire ou récent
 /// avec son titre, sa catégorie, sa difficulté et le nombre de participants
+library;
 
 import 'package:flutter/material.dart';
 
@@ -109,8 +110,8 @@ class RecentActivityCard extends StatelessWidget {
                               color:
                                   index < difficulty
                                       ? Colors.amber
-                                      : theme.colorScheme.onSurface.withOpacity(
-                                        0.4,
+                                      : theme.colorScheme.onSurface.withAlpha(
+                                        (0.4 * 255).toInt(),
                                       ),
                             );
                           }),

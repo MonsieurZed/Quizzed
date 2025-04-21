@@ -2,6 +2,7 @@
 ///
 /// Représente une session active d'un quiz en cours
 /// Gère l'état actuel, les réponses données et le chronomètre
+library;
 
 import 'package:quizzzed/models/quiz/question_model.dart';
 import 'package:quizzzed/models/quiz/quiz_model.dart';
@@ -118,7 +119,6 @@ class QuizSessionModel {
     for (var question in questions) {
       if (isQuestionAnswered(question.id)) {
         List<int> selectedIndexes = userAnswers[question.id] ?? [];
-        bool isCorrect = false;
 
         switch (question.type) {
           case QuestionType.multipleChoice:
@@ -128,7 +128,6 @@ class QuizSessionModel {
               int index = selectedIndexes.first;
               if (index < question.answers.length &&
                   question.answers[index].isCorrect) {
-                isCorrect = true;
                 totalScore += question.points;
               }
             }
@@ -148,7 +147,6 @@ class QuizSessionModel {
                 selectedIndexes.every(
                   (index) => correctIndexes.contains(index),
                 )) {
-              isCorrect = true;
               totalScore += question.points;
             }
             break;

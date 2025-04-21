@@ -2,6 +2,7 @@
 ///
 /// Gère toutes les opérations d'authentification utilisateur
 /// S'appuie sur FirebaseService pour les opérations Firebase Auth
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -283,8 +284,9 @@ class AuthService extends ChangeNotifier {
     String? newPassword,
   }) async {
     try {
-      if (currentUser == null || _currentUserModel == null)
+      if (currentUser == null || _currentUserModel == null) {
         throw Exception('Non authentifié');
+      }
 
       _isLoading = true;
       notifyListeners();
@@ -318,8 +320,9 @@ class AuthService extends ChangeNotifier {
       final updates = <String, dynamic>{};
       if (displayName != null) updates['displayName'] = displayName;
       if (photoUrl != null) updates['photoUrl'] = photoUrl;
-      if (avatarBackgroundColor != null)
+      if (avatarBackgroundColor != null) {
         updates['avatarBackgroundColor'] = avatarBackgroundColor;
+      }
 
       if (updates.isNotEmpty) {
         await _firebase.firestore
@@ -334,6 +337,17 @@ class AuthService extends ChangeNotifier {
           avatarBackgroundColor:
               avatarBackgroundColor ?? _currentUserModel!.avatarBackgroundColor,
         );
+
+        // Synchroniser les changements dans tous les lobbies où l'utilisateur est présent
+        if (displayName != null ||
+            photoUrl != null ||
+            avatarBackgroundColor != null) {
+          _syncProfileUpdatesToLobbies(
+            displayName: displayName,
+            photoUrl: photoUrl,
+            avatarBackgroundColor: avatarBackgroundColor,
+          );
+        }
       }
     } catch (e, stackTrace) {
       logger.error(
@@ -345,6 +359,96 @@ class AuthService extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // Synchronise les mises à jour de profil dans tous les lobbies où l'utilisateur est présent
+  Future<void> _syncProfileUpdatesToLobbies({
+    String? displayName,
+    String? photoUrl,
+    String? avatarBackgroundColor,
+  }) async {
+    try {
+      if (currentUser == null) return;
+
+      logger.info(
+        'Synchronisation du profil mis à jour dans les lobbies actifs',
+        tag: logTag,
+      );
+
+      // Rechercher tous les lobbies où l'utilisateur est présent
+      final lobbiesQuery =
+          await _firebase.firestore
+              .collection('lobbies')
+              .where('players', arrayContains: {'userId': currentUser!.uid})
+              .get();
+
+      // Cette requête ne fonctionnera pas directement avec Firestore, donc nous utilisons une approche différente
+      // Rechercher tous les lobbies actifs
+      final lobbiesSnapshot =
+          await _firebase.firestore.collection('lobbies').get();
+
+      int updatedLobbies = 0;
+
+      // Pour chaque lobby, vérifier si l'utilisateur en fait partie et mettre à jour ses infos
+      for (var lobbyDoc in lobbiesSnapshot.docs) {
+        final lobbyData = lobbyDoc.data();
+        final List<dynamic> players = lobbyData['players'] ?? [];
+
+        // Rechercher l'index du joueur dans la liste
+        int playerIndex = -1;
+        for (int i = 0; i < players.length; i++) {
+          if (players[i]['userId'] == currentUser!.uid) {
+            playerIndex = i;
+            break;
+          }
+        }
+
+        // Si le joueur est trouvé dans ce lobby, mettre à jour ses informations
+        if (playerIndex >= 0) {
+          // Créer une copie de la liste des joueurs pour la modifier
+          List<dynamic> updatedPlayers = List.from(players);
+
+          // Mettre à jour les informations du joueur
+          if (displayName != null) {
+            updatedPlayers[playerIndex]['displayName'] = displayName;
+          }
+          if (photoUrl != null) {
+            updatedPlayers[playerIndex]['avatarUrl'] = photoUrl;
+          }
+          if (avatarBackgroundColor != null) {
+            updatedPlayers[playerIndex]['avatarBackgroundColor'] =
+                avatarBackgroundColor;
+          }
+
+          // Mettre à jour le document du lobby
+          await _firebase.firestore
+              .collection('lobbies')
+              .doc(lobbyDoc.id)
+              .update({
+                'players': updatedPlayers,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+
+          updatedLobbies++;
+          logger.debug(
+            'Profil mis à jour dans le lobby: ${lobbyDoc.id}',
+            tag: logTag,
+          );
+        }
+      }
+
+      logger.info(
+        'Profil utilisateur mis à jour dans $updatedLobbies lobbies',
+        tag: logTag,
+      );
+    } catch (e, stackTrace) {
+      logger.error(
+        'Erreur lors de la synchronisation du profil dans les lobbies: $e',
+        tag: logTag,
+        data: stackTrace,
+      );
+      // On n'échoue pas la mise à jour du profil si la synchronisation échoue
     }
   }
 

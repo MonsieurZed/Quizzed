@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Quizzzed" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
     <!-- Favicon -->
@@ -19,9 +20,9 @@
     <title>Quizzzed</title>
     <link rel="manifest" href="manifest.json" />
 
-    <!-- Utilisation du token de template au lieu de la variable locale -->
+    <!-- Using template token for service worker version -->
     <script>
-      // La version du service worker est automatiquement injectée par Flutter
+      // The service worker token will be replaced by Flutter
       var serviceWorkerVersion = null;
     </script>
 
@@ -31,10 +32,12 @@
   <body>
     <script>
       window.addEventListener("load", function (ev) {
-        // Détection du serviceWorkerVersion global injecté par Flutter
-        serviceWorkerVersion = serviceWorkerVersion || "";
+        // Configure le chargement de Flutter
+        window.flutterConfiguration = {
+          serviceWorkerVersion: serviceWorkerVersion,
+        };
 
-        // Utilisation de la méthode load recommandée
+        // Initialise Flutter avec la nouvelle syntaxe
         _flutter.loader.loadEntrypoint({
           serviceWorker: {
             serviceWorkerVersion: serviceWorkerVersion,

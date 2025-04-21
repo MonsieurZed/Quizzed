@@ -2,6 +2,7 @@
 ///
 /// Bouton flottant discret qui permet d'accéder rapidement à la console de débogage
 /// Visible uniquement en mode debug pour les développeurs
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:quizzzed/routes/app_routes.dart';
 
 class DebugAccessButton extends StatelessWidget {
-  const DebugAccessButton({Key? key}) : super(key: key);
+  const DebugAccessButton({super.key});
 
   @override
   Widget build(BuildContext context) {

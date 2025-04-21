@@ -3,6 +3,7 @@
 /// Service de gestion des lobbys pour les quiz
 /// Permet de créer, rejoindre, modifier et quitter des lobbys
 /// Synchronisation en temps réel avec Firestore
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quizzzed/config/app_config.dart';

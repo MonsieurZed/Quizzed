@@ -2,6 +2,7 @@
 ///
 /// Affiche une catégorie de quiz avec une image et un titre
 /// Utilisé dans la page d'accueil et dans la vue des catégories
+library;
 
 import 'package:flutter/material.dart';
 
@@ -12,12 +13,12 @@ class QuizCategoryCard extends StatelessWidget {
   final bool isSelected;
 
   const QuizCategoryCard({
-    Key? key,
+    super.key,
     required this.category,
     this.imageUrl,
     required this.onTap,
     this.isSelected = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

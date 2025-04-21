@@ -2,6 +2,7 @@
 ///
 /// Configuration des routes de l'application avec go_router
 /// Gestion du routage et des redirections
+library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:quizzzed/views/auth/forgot_password_view.dart';
 import 'package:quizzzed/views/auth/login_view.dart';
 import 'package:quizzzed/views/auth/register_view.dart';
 import 'package:quizzzed/views/debug/debug_view.dart';
+import 'package:quizzzed/views/home/components/index.dart';
 import 'package:quizzzed/views/home/create_lobby_view.dart';
 import 'package:quizzzed/views/home/home_view.dart';
 import 'package:quizzzed/views/home/lobbies_view.dart';
@@ -35,6 +37,13 @@ class AppRoutes {
 
   // Nouvelles routes pour les quiz sessions
   static const String quizSession = 'quiz-session';
+
+  // Nouvelles routes pour les sections du menu
+  static const String homeTab = 'home-tab';
+  static const String lobbyTab = 'lobby-tab';
+  static const String leaderboardTab = 'leaderboard-tab';
+  static const String createTab = 'create-tab';
+  static const String settingsTab = 'settings-tab';
 
   static final AuthService _authService = AuthService();
 
@@ -94,30 +103,74 @@ class AppRoutes {
         builder: (context, state) => const ForgotPasswordView(),
       ),
 
-      // Routes protégées (nécessitent authentification)
-      GoRoute(
-        path: '/home',
-        name: home,
-        builder: (context, state) => const HomeView(),
-      ),
+      // NOUVELLE STRUCTURE : HomeView est désormais un shell avec des routes enfants
+      ShellRoute(
+        builder: (context, state, child) {
+          // Passer l'index de la page actuelle à HomeView basé sur l'URL
+          int currentIndex = 0;
+          final location = state.matchedLocation;
 
-      // Routes des lobbys
-      GoRoute(
-        path: '/lobbies',
-        name: lobbies,
-        builder: (context, state) => const LobbiesView(),
-      ),
-      GoRoute(
-        path: '/lobbies/create',
-        name: createLobby,
-        builder: (context, state) => const CreateLobbyView(),
-      ),
-      GoRoute(
-        path: '/lobbies/:id',
-        name: lobbyDetail,
-        builder:
-            (context, state) =>
-                LobbyDetailView(lobbyId: state.pathParameters['id'] ?? ''),
+          if (location.startsWith('/home/lobbies')) {
+            currentIndex = 1;
+          } else if (location.startsWith('/home/leaderboard')) {
+            currentIndex = 2;
+          } else if (location.startsWith('/home/create')) {
+            currentIndex = 3;
+          } else if (location.startsWith('/home/settings')) {
+            currentIndex = 4;
+          }
+
+          return HomeView(currentIndex: currentIndex, child: child);
+        },
+        routes: [
+          // Onglet Accueil
+          GoRoute(
+            path: '/home',
+            name: home,
+            builder: (context, state) => const HomeContent(),
+          ),
+
+          // Onglet Lobbies
+          GoRoute(
+            path: '/home/lobbies',
+            name: lobbies,
+            builder: (context, state) => const LobbiesView(),
+            routes: [
+              // Détail d'un lobby
+              GoRoute(
+                path: ':id',
+                name: lobbyDetail,
+                builder:
+                    (context, state) => LobbyDetailView(
+                      lobbyId: state.pathParameters['id'] ?? '',
+                    ),
+              ),
+            ],
+          ),
+
+          // Onglet Créer un lobby
+          GoRoute(
+            path: '/home/create',
+            name: createLobby,
+            builder: (context, state) => const CreateLobbyView(),
+          ),
+
+          // Onglet Classement
+          GoRoute(
+            path: '/home/leaderboard',
+            name: 'leaderboard',
+            builder:
+                (context, state) =>
+                    const Center(child: Text('Classement - À implémenter')),
+          ),
+
+          // Onglet Paramètres
+          GoRoute(
+            path: '/home/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsContent(),
+          ),
+        ],
       ),
 
       // Route de débogage (accessible uniquement en mode debug)

@@ -2,13 +2,14 @@
 ///
 /// Affiche les logs stockés dans le LoggerService avec des options de filtrage
 /// et un système de coloration par niveau de gravité pour faciliter le débogage
+library;
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:quizzzed/services/logger_service.dart';
 
 class LogViewerWidget extends StatefulWidget {
-  const LogViewerWidget({Key? key}) : super(key: key);
+  const LogViewerWidget({super.key});
 
   @override
   State<LogViewerWidget> createState() => _LogViewerWidgetState();
@@ -110,9 +111,8 @@ class _LogViewerWidgetState extends State<LogViewerWidget> {
                   hintText: 'Filtrer par texte...',
                   prefixIcon: const Icon(Icons.search),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceVariant.withAlpha(
-                    (255 * 0.3).toInt(),
-                  ),
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withAlpha((255 * 0.3).toInt()),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -243,9 +243,8 @@ class _LogViewerWidgetState extends State<LogViewerWidget> {
                         backgroundColor:
                             index % 2 == 0
                                 ? theme.colorScheme.surface
-                                : theme.colorScheme.surfaceVariant.withOpacity(
-                                  0.3,
-                                ),
+                                : theme.colorScheme.surfaceContainerHighest
+                                    .withAlpha((0.3 * 255).toInt()),
                       );
                     },
                   ),
@@ -281,10 +280,10 @@ class LogEntryTile extends StatelessWidget {
   final Color backgroundColor;
 
   const LogEntryTile({
-    Key? key,
+    super.key,
     required this.log,
     required this.backgroundColor,
-  }) : super(key: key);
+  });
 
   Color _getLevelColor(LogLevel level) {
     return switch (level) {
@@ -355,7 +354,7 @@ class LogEntryTile extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          color: theme.colorScheme.surfaceVariant.withAlpha(
+          color: theme.colorScheme.surfaceContainerHighest.withAlpha(
             (255 * 0.3).toInt(),
           ),
           child: Column(

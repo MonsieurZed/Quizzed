@@ -2,6 +2,7 @@
 ///
 /// Widget qui affiche un lobby dans la liste des lobbys disponibles
 /// Contient les informations essentielles et un bouton pour le rejoindre
+library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/models/quiz/lobby_model.dart';

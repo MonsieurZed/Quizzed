@@ -2,6 +2,7 @@
 ///
 /// Permet à l'utilisateur de sélectionner son avatar parmi les images disponibles
 /// avec un affichage en grille et pagination
+library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/services/avatar_service.dart';
@@ -12,11 +13,11 @@ class AvatarSelector extends StatefulWidget {
   final double size;
 
   const AvatarSelector({
-    Key? key,
+    super.key,
     this.currentAvatar,
     required this.onAvatarSelected,
     this.size = 80.0,
-  }) : super(key: key);
+  });
 
   @override
   State<AvatarSelector> createState() => _AvatarSelectorState();
@@ -62,17 +63,10 @@ class _AvatarSelectorState extends State<AvatarSelector> {
       return Center(child: Text('Aucun avatar disponible'));
     }
 
-    return Container(
+    return SizedBox(
       height: MediaQuery.of(context).size.height * 0.5,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Text(
-              'Choisissez votre avatar',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
           Expanded(
             child: GridView.builder(
               padding: EdgeInsets.all(16.0),

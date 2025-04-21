@@ -1,6 +1,7 @@
 /// Modèle de réponse
 ///
 /// Représente une option de réponse à une question dans un quiz
+library;
 
 class AnswerModel {
   final String id;
