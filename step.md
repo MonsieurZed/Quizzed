@@ -40,7 +40,7 @@
 6. [x] Affichage détaillé d'un lobby avec la liste des joueurs
 7. [x] Interface pour l'hôte (démarrage du quiz, expulsion des joueurs)
 
-## Corrections effectuées
+## Corrections et améliorations effectuées
 
 1. [x] Correction des types dans `LobbyModel` et ajout des méthodes manquantes
 2. [x] Implémentation du contrôleur `QuizSessionController` pour gérer les sessions de quiz
@@ -53,16 +53,26 @@
    - Suppression de la référence à `avatarBackgroundColor` qui n'existait pas
    - Suppression des imports et champs non utilisés
 5. [x] Création des widgets partagés manquants (`EmptyState`, `ErrorDisplay`, `LoadingDisplay`, etc.)
+6. [x] Amélioration de l'interface de la liste des lobbies:
+   - Suppression du bandeau AppBar avec le titre "Lobbies"
+   - Suppression du filtre de catégories
+   - Déplacement des boutons flottants dans un menu horizontal en haut
+   - Restructuration des actions en un menu cohérent avec:
+     - Bouton "Créer un lobby" (principal)
+     - Bouton "Rejoindre avec un code" (secondaire)
+     - Bouton de rafraîchissement
 
 ## Fonctionnalités à implémenter dans les prochaines étapes
 
 1. [ ] Améliorer l'affichage des joueurs prêts/en attente
-2. [ ] Implémenter la détection de déconnexion des joueurs
-3. [ ] Ajouter la fonctionnalité de suppression automatique des lobbies inactifs
-4. [ ] Intégrer une animation lors du démarrage du quiz
-5. [ ] Ajouter des options pour modifier les paramètres du lobby après sa création
-6. [ ] Créer la vue de session de quiz (pour continuer après le démarrage d'une partie)
+2. [ ] Ajouter un moteur de recherche de lobby
+3. [ ] Ajouter un filtre d'affichage par catergorie
+4. [ ] Implémenter la détection de déconnexion des joueurs
+5. [ ] Ajouter la fonctionnalité de suppression automatique des lobbies inactifs
+6. [ ] Intégrer une animation lors du démarrage du quiz
+7. [ ] Ajouter des options pour modifier les paramètres du lobby après sa création
+8. [ ] Créer la vue de session de quiz (pour continuer après le démarrage d'une partie)
 
 ## Résumé des travaux effectués
 
-La fonctionnalité de lobby est maintenant complète et fonctionnelle avec tous les widgets partagés nécessaires créés. L'application permet aux utilisateurs de créer, rejoindre et gérer des lobbies pour les quiz. Toutes les erreurs ont été corrigées et la fonctionnalité est prête à être testée.
+La fonctionnalité de lobby est maintenant complète et fonctionnelle avec tous les widgets partagés nécessaires créés. L'application permet aux utilisateurs de créer, rejoindre et gérer des lobbies pour les quiz. L'interface utilisateur a été améliorée en supprimant les éléments superflus (bandeau AppBar, filtre de catégories) et en organisant les actions dans un menu horizontal plus accessible en haut de l'écran. Toutes les erreurs ont été corrigées et la fonctionnalité est prête à être testée.

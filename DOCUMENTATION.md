@@ -234,10 +234,13 @@ Pour faciliter le développement, plusieurs fonctionnalités sont automatiquemen
 
 - **Liste des lobbies**:
 
-  - Affichage des lobbies publics disponibles
-  - Filtrage par catégorie
-  - Options pour rejoindre ou créer un lobby
-  - Interface pour rejoindre un lobby privé via code
+  - Interface épurée sans bandeau de titre
+  - Menu horizontal d'actions en haut de la liste:
+    - Bouton principal "Créer un lobby"
+    - Bouton secondaire "Rejoindre avec un code"
+    - Bouton de rafraîchissement
+  - Liste des lobbies publics disponibles
+  - Options pour rejoindre directement un lobby
 
 - **Détails du lobby**:
   - Visualisation des joueurs présents avec leur statut
