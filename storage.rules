@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Règles pour les avatars des utilisateurs
+    match /user_avatars/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId && 
+                    request.resource.size < 5 * 1024 * 1024 && // Limite de 5MB
+                    request.resource.contentType.matches('image/.*'); // Uniquement des images
+    }
+    
+    // Règles pour les images de quiz
+    match /quiz_images/{quizId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+                    request.resource.size < 10 * 1024 * 1024 && // Limite de 10MB
+                    request.resource.contentType.matches('image/.*'); // Uniquement des images
+    }
+    
+    // Par défaut, refuser l'accès
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
