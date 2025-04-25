@@ -1,6 +1,6 @@
 # Journal d'activité - Développement du système de jeux
 
-# <!--
+<!--
 
 # NE PAS SUPPRIMER CE HEADER - DOCUMENTATION DU PROJET QUIZZED
 
@@ -46,3 +46,41 @@ N'oubliez pas de mettre à jour ce journal avec vos propres actions pour mainten
 - Création de ce journal d'activité pour suivre la progression
 - Mise à jour de `todo.md` avec les étapes détaillées pour la refactorisation
 - Ajout d'un header explicatif dans `memory.md` pour documenter les fichiers MD existants et leur utilité
+
+### Début de la résolution des fonctionnalités dupliquées
+
+- Décision de commencer par la résolution des fonctionnalités dupliquées avant la refactorisation complète du système de quiz
+- Analyse des duplications à aborder en priorité
+- Plan d'action : commencer par les contrôleurs de lobby et leurs fonctions dupliquées
+
+### Analyse des duplications dans les contrôleurs de lobby
+
+- Examen des fichiers `lobby_operation_helper.dart`, `lobby_management_controller.dart` et `lobby_player_controller.dart`
+- Identification des principales fonctions dupliquées :
+  1. `fetchLobbyById` présente dans helper et contrôleurs
+  2. Vérifications de type `verifyUserIsHost` et `verifyPlayerInLobby` dupliquées
+  3. Gestion des joueurs (ajout/suppression) implémentée de multiples façons
+  4. Stream management dupliqué entre les contrôleurs
+
+### Plan de refactorisation pour résoudre les duplications
+
+1. **Phase 1**: Renforcer le rôle de `LobbyOperationHelper`
+
+   - S'assurer que tous les contrôleurs utilisent l'helper via une composition explicite
+   - Déplacer toutes les fonctions utilitaires communes vers l'helper
+   - Standardiser les signatures de méthodes et les types de retour
+
+2. **Phase 2**: Consolider les fonctions de streaming de lobby
+
+   - Créer une fonction de streaming unifiée dans l'helper
+   - Simplifier les implémentations dans les contrôleurs pour réutiliser cette fonction
+
+3. **Phase 3**: Améliorer la gestion des joueurs
+
+   - Centraliser la logique d'ajout/suppression/modification des joueurs
+   - Utiliser des transactions Firestore pour éviter les conflits d'écriture
+
+4. **Phase 4**: Nettoyer les contrôleurs
+   - Supprimer le code dupliqué dans les contrôleurs
+   - Mettre à jour les contrôleurs pour utiliser l'helper de manière cohérente
+   - Ajouter des tests pour vérifier le bon fonctionnement
