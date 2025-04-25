@@ -8,8 +8,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:quizzzed/controllers/lobby_controller.dart';
-import 'package:quizzzed/models/quiz/lobby_model.dart';
+import 'package:quizzzed/controllers/lobby/lobby_controller.dart';
+import 'package:quizzzed/models/lobby/lobby_model.dart';
 import 'package:quizzzed/routes/app_routes.dart';
 import 'package:quizzzed/services/auth_service.dart';
 import 'package:quizzzed/widgets/home/lobby_card.dart';
@@ -31,11 +31,14 @@ class _LobbyListViewState extends State<LobbyListView> {
   List<String> _categories = ['Tous'];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool _showSearch = false;
 
   @override
   void initState() {
     super.initState();
+    // Chargement initial des lobbies et des catégories
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLobbies();
+    });
     // Chargement initial des catégories
     _updateCategoriesFromLobbies();
   }
@@ -92,23 +95,107 @@ class _LobbyListViewState extends State<LobbyListView> {
     }
   }
 
-  Future<void> _joinLobby(LobbyModel lobby) async {
+  Future<void> _joinLobby(LobbyModel lobby, {bool isResuming = false}) async {
     final lobbyController = Provider.of<LobbyController>(
       context,
       listen: false,
     );
 
-    final success = await lobbyController.joinLobby(lobby.id);
+    // If resuming an existing lobby, use loadExistingLobby instead of joinLobby
+    if (isResuming) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text("Chargement du lobby..."),
+              ],
+            ),
+          );
+        },
+      );
 
-    if (success && mounted) {
-      context.pushNamed(
-        AppRoutes.lobbyDetail,
-        pathParameters: {'id': lobby.id},
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible de rejoindre ce lobby')),
-      );
+      try {
+        // Use loadExistingLobby to avoid rejoining
+        final success = await lobbyController.loadExistingLobby(lobby.id);
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+
+        if (success && mounted) {
+          // Navigate to the lobby detail view using correct nested path
+          context.go('/home/lobbies/${lobby.id}');
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Le lobby n\'existe plus ou a été supprimé'),
+            ),
+          );
+        }
+      } catch (e) {
+        // Close loading dialog in case of error
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+        }
+      }
+      return;
+    }
+
+    // For regular join (not resuming), show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text("Connexion au lobby en cours..."),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final success = await lobbyController.joinLobby(lobby.id);
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (success && mounted) {
+        context.pushReplacementNamed(
+          AppRoutes.lobbyDetail,
+          pathParameters: {'id': lobby.id},
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de rejoindre ce lobby')),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog in case of error
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+      }
     }
   }
 
@@ -121,21 +208,6 @@ class _LobbyListViewState extends State<LobbyListView> {
     );
   }
 
-  void _toggleSearch() {
-    setState(() {
-      _showSearch = !_showSearch;
-      if (!_showSearch) {
-        _searchQuery = '';
-        _searchController.clear();
-      } else {
-        FocusScope.of(context).requestFocus(FocusNode());
-        Future.delayed(const Duration(milliseconds: 100), () {
-          FocusScope.of(context).requestFocus(FocusNode());
-        });
-      }
-    });
-  }
-
   void _updateSearchQuery(String query) {
     setState(() {
       _searchQuery = query.toLowerCase();
@@ -145,7 +217,7 @@ class _LobbyListViewState extends State<LobbyListView> {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final currentUser = authService.currentUser;
+    final currentUser = authService.currentFirebaseUser;
 
     if (currentUser == null) {
       return const Center(child: Text('Utilisateur non connecté'));
@@ -192,7 +264,7 @@ class _LobbyListViewState extends State<LobbyListView> {
               return Column(
                 children: [
                   _buildHorizontalActionsMenu(context),
-                  if (_showSearch) _buildSearchBar(),
+                  _buildSearchBar(),
                   _buildCategoryFilter(),
                   Expanded(
                     child: EmptyState(
@@ -221,7 +293,7 @@ class _LobbyListViewState extends State<LobbyListView> {
                 _buildHorizontalActionsMenu(context),
 
                 // Barre de recherche (conditionnelle)
-                if (_showSearch) _buildSearchBar(),
+                _buildSearchBar(),
 
                 // Filtre par catégorie
                 _buildCategoryFilter(),
@@ -236,12 +308,24 @@ class _LobbyListViewState extends State<LobbyListView> {
                         itemBuilder: (context, index) {
                           final lobby = filteredLobbies[index];
                           final isHost = lobby.hostId == currentUser.uid;
+                          final isCurrentLobby =
+                              authService.currentUserModel?.currentLobbyId ==
+                              lobby.id;
 
-                          return LobbyCard(
-                            lobby: lobby,
-                            isHost: isHost,
-                            canJoin: !isHost,
-                            onJoin: () => _joinLobby(lobby),
+                          return Column(
+                            children: [
+                              LobbyCard(
+                                lobby: lobby,
+                                isHost: isHost,
+                                isCurrentLobby: isCurrentLobby,
+                                canJoin: !isHost && !isCurrentLobby,
+                                onJoin:
+                                    () => _joinLobby(
+                                      lobby,
+                                      isResuming: isHost || isCurrentLobby,
+                                    ),
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -306,42 +390,45 @@ class _LobbyListViewState extends State<LobbyListView> {
         ],
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center, // Centrer les boutons
         children: [
           // Bouton pour créer un lobby
-          Expanded(
+          SizedBox(
+            width: 160, // Largeur fixe au lieu de Expanded
             child: ElevatedButton.icon(
               onPressed: () => context.pushNamed(AppRoutes.createLobby),
               icon: const Icon(Icons.add),
               label: const Text('Créer un lobby'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor:
+                    theme.colorScheme.primary, // Force la couleur primaire
+                foregroundColor:
+                    theme.colorScheme.onPrimary, // Force la couleur du texte
               ),
             ),
           ),
           const SizedBox(width: 12),
 
           // Bouton pour rejoindre un lobby privé
-          Expanded(
-            child: OutlinedButton.icon(
+          SizedBox(
+            width: 160, // Largeur fixe au lieu de Expanded
+            child: ElevatedButton.icon(
               onPressed: _showJoinPrivateLobbyDialog,
               icon: const Icon(Icons.vpn_key),
-              label: const Text('Rejoindre avec un code'),
-              style: OutlinedButton.styleFrom(
+              label: const Text('Code'),
+              style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Colors.white, // Fond blanc pour contraster
+                foregroundColor:
+                    theme.colorScheme.primary, // Texte couleur primaire
+                side: BorderSide(color: theme.colorScheme.primary),
               ),
             ),
           ),
           const SizedBox(width: 12),
 
-          // Bouton de recherche
-          IconButton(
-            onPressed: _toggleSearch,
-            icon: Icon(_showSearch ? Icons.search_off : Icons.search),
-            tooltip:
-                _showSearch ? 'Masquer la recherche' : 'Rechercher un lobby',
-          ),
-
-          // Bouton pour rafraîchir
+          // Bouton pour rafraîchir (seul bouton d'action restant)
           IconButton(
             onPressed: _isRefreshing ? null : _loadLobbies,
             icon:
@@ -353,6 +440,10 @@ class _LobbyListViewState extends State<LobbyListView> {
                     )
                     : const Icon(Icons.refresh),
             tooltip: 'Actualiser',
+            style: IconButton.styleFrom(
+              backgroundColor: theme.colorScheme.surfaceVariant,
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

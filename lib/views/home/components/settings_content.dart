@@ -5,10 +5,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:quizzzed/models/user/user_model.dart';
 import 'package:quizzzed/services/auth_service.dart';
 import 'package:quizzzed/services/logger_service.dart';
+import 'package:quizzzed/theme/theme_service.dart';
+import 'package:quizzzed/services/validation_service.dart';
 import 'package:quizzzed/widgets/auth/auth_button.dart';
 import 'package:quizzzed/widgets/auth/auth_text_field.dart';
 import 'package:quizzzed/widgets/profile/avatar_preview.dart';
@@ -35,7 +37,7 @@ class _SettingsContentState extends State<SettingsContent> {
   final _confirmPasswordController = TextEditingController();
 
   String? _selectedAvatar;
-  String? _selectedColor;
+  Color? _selectedColor;
   String? _errorMessage;
 
   bool _isPasswordChangeVisible = false;
@@ -65,8 +67,8 @@ class _SettingsContentState extends State<SettingsContent> {
 
     if (user != null) {
       _displayNameController.text = user.displayName ?? '';
-      _selectedAvatar = user.photoUrl;
-      _selectedColor = user.avatarBackgroundColor;
+      _selectedAvatar = user.avatar;
+      _selectedColor = user.color;
 
       logger.debug(
         'Profil utilisateur chargé: ${user.displayName}',
@@ -90,8 +92,8 @@ class _SettingsContentState extends State<SettingsContent> {
     try {
       // Préparation des paramètres de mise à jour
       final String displayName = _displayNameController.text.trim();
-      final String? photoUrl = _selectedAvatar;
-      final String? backgroundColor = _selectedColor;
+      final String? avatar = _selectedAvatar;
+      final Color? userColor = _selectedColor;
 
       // Si la section de changement de mot de passe est ouverte et les champs remplis
       String? currentPassword;
@@ -112,11 +114,11 @@ class _SettingsContentState extends State<SettingsContent> {
         newPassword = _newPasswordController.text;
       }
 
-      // Appel au service de mise à jour
+      // Appel au service de mise à jour avec le bon paramètre
       await authService.updateUserProfile(
         displayName: displayName,
-        photoUrl: photoUrl,
-        avatarBackgroundColor: backgroundColor,
+        avatar: avatar,
+        userColor: userColor,
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
@@ -209,15 +211,7 @@ class _SettingsContentState extends State<SettingsContent> {
                       });
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un nouveau mot de passe';
-                    }
-                    if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
-                    }
-                    return null;
-                  },
+                  validator: ValidationService.validatePassword,
                 ),
                 const SizedBox(height: 16),
                 AuthTextField(
@@ -238,15 +232,11 @@ class _SettingsContentState extends State<SettingsContent> {
                       });
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez confirmer votre nouveau mot de passe';
-                    }
-                    if (value != _newPasswordController.text) {
-                      return 'Les mots de passe ne correspondent pas';
-                    }
-                    return null;
-                  },
+                  validator:
+                      (value) => ValidationService.validatePasswordConfirmation(
+                        value,
+                        _newPasswordController.text,
+                      ),
                 ),
               ],
             ),
@@ -295,7 +285,6 @@ class _SettingsContentState extends State<SettingsContent> {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final UserModel? user = authService.currentUserModel;
     final isLoading = authService.isLoading;
 
     return Padding(
@@ -372,31 +361,22 @@ class _SettingsContentState extends State<SettingsContent> {
                           children: [
                             // Colonne 1 : Sélection d'avatar (60% de l'espace)
                             Expanded(
-                              flex: 60,
+                              flex: 55,
                               child: Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
+                                  padding: const EdgeInsets.all(36.0),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 12.0,
-                                        ),
-                                        child: Text(
-                                          'Choisir un avatar',
-                                          style:
-                                              Theme.of(
-                                                context,
-                                              ).textTheme.titleMedium,
-                                        ),
-                                      ),
                                       AvatarSelector(
                                         currentAvatar: _selectedAvatar,
                                         onAvatarSelected: (avatar) {
                                           setState(() {
-                                            _selectedAvatar = avatar;
+                                            _selectedAvatar = avatar
+                                                .split('/')
+                                                .last
+                                                .replaceAll('.png', '');
                                           });
                                         },
                                       ),
@@ -410,7 +390,7 @@ class _SettingsContentState extends State<SettingsContent> {
 
                             // Colonne 2 : Sélection de couleur (10% de l'espace)
                             Expanded(
-                              flex: 10,
+                              flex: 15,
                               child: Card(
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
@@ -468,9 +448,9 @@ class _SettingsContentState extends State<SettingsContent> {
                                                 ).textTheme.titleMedium,
                                           ),
                                           const SizedBox(height: 12),
-                                          AvatarPreview(
-                                            avatarUrl: _selectedAvatar,
-                                            backgroundColor: _selectedColor,
+                                          AvatarDisplay(
+                                            avatar: _selectedAvatar,
+                                            color: _selectedColor,
                                             size: 120,
                                           ),
                                         ],
@@ -503,16 +483,9 @@ class _SettingsContentState extends State<SettingsContent> {
                                             prefixIcon: const Icon(
                                               Icons.person,
                                             ),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'Veuillez entrer un pseudo';
-                                              }
-                                              if (value.length < 3) {
-                                                return 'Le pseudo doit contenir au moins 3 caractères';
-                                              }
-                                              return null;
-                                            },
+                                            validator:
+                                                ValidationService
+                                                    .validateUsername,
                                           ),
                                         ],
                                       ),
@@ -590,9 +563,13 @@ class _SettingsContentState extends State<SettingsContent> {
               leading: const Icon(Icons.dark_mode_outlined),
               title: const Text('Mode sombre'),
               trailing: Switch(
-                value: Theme.of(context).brightness == Brightness.dark,
+                value: Provider.of<ThemeService>(context).isDarkMode,
                 onChanged: (value) {
-                  // TODO: Toggle dark mode
+                  final themeService = Provider.of<ThemeService>(
+                    context,
+                    listen: false,
+                  );
+                  themeService.setDarkMode(value);
                 },
               ),
             ),
@@ -662,7 +639,12 @@ class _SettingsContentState extends State<SettingsContent> {
 
                 if (confirm == true) {
                   await authService.signOut();
-                  // La redirection est gérée automatiquement par le RouterGuard
+
+                  // Redirection explicite vers la page de connexion
+                  if (context.mounted) {
+                    // Utiliser GoRouter pour naviguer vers la page de connexion
+                    context.go('/login');
+                  }
                 }
               },
             ),

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:quizzzed/private_key.dart';
 import 'package:quizzzed/services/auth_service.dart';
+import 'package:quizzzed/services/validation_service.dart';
 import 'package:quizzzed/widgets/auth/auth_button.dart';
 import 'package:quizzzed/widgets/auth/auth_text_field.dart';
 
@@ -109,137 +110,172 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final isLoading = authService.isLoading;
+    final screenSize = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Logo et titre
-              Image.asset('assets/images/logo.png', height: 120),
-              const SizedBox(height: 32),
-              Text(
-                'Connexion',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450, // Largeur maximale pour les grands écrans
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
               ),
-              const SizedBox(height: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Espace supérieur pour meilleur centrage
+                  SizedBox(height: screenSize.height * 0.05),
 
-              // Formulaire
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Champ email
-                    AuthTextField(
-                      controller: _emailController,
-                      focusNode: _emailFocusNode,
-                      labelText: 'Adresse email',
-                      hintText: 'Entrez votre adresse email',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer votre adresse email';
-                        }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Veuillez entrer une adresse email valide';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: () {
-                        _passwordFocusNode.requestFocus();
-                      },
+                  // Logo et titre
+                  Center(
+                    child: Image.asset('assets/images/logo.png', height: 120),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Connexion',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
 
-                    // Champ mot de passe
-                    AuthTextField(
-                      controller: _passwordController,
-                      focusNode: _passwordFocusNode,
-                      labelText: 'Mot de passe',
-                      hintText: 'Entrez votre mot de passe',
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                  // Formulaire
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.shadowColor.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                        onPressed: _togglePasswordVisibility,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer votre mot de passe';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: _handleLogin,
+                      ],
                     ),
-
-                    // Message d'erreur
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16, bottom: 8),
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Champ email
+                          AuthTextField(
+                            controller: _emailController,
+                            focusNode: _emailFocusNode,
+                            labelText: 'Adresse email',
+                            hintText: 'Entrez votre adresse email',
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            validator: ValidationService.validateEmail,
+                            onEditingComplete: () {
+                              _passwordFocusNode.requestFocus();
+                            },
                           ),
-                          textAlign: TextAlign.center,
-                        ),
+
+                          // Champ mot de passe
+                          AuthTextField(
+                            controller: _passwordController,
+                            focusNode: _passwordFocusNode,
+                            labelText: 'Mot de passe',
+                            hintText: 'Entrez votre mot de passe',
+                            obscureText: _obscurePassword,
+                            textInputAction: TextInputAction.done,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: _togglePasswordVisibility,
+                            ),
+                            validator: ValidationService.validatePassword,
+                            onEditingComplete: _handleLogin,
+                          ),
+
+                          // Message d'erreur
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 16,
+                                bottom: 8,
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+
+                          const SizedBox(height: 24),
+
+                          // Bouton de connexion
+                          AuthButton(
+                            text: 'Se connecter',
+                            onPressed: _handleLogin,
+                            isLoading: isLoading,
+                          ),
+
+                          // Lien mot de passe oublié
+                          Align(
+                            alignment: Alignment.center,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: TextButton(
+                                onPressed:
+                                    () => context.push('/forgot-password'),
+                                child: const Text('Mot de passe oublié ?'),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-
-                    const SizedBox(height: 24),
-
-                    // Bouton de connexion
-                    AuthButton(
-                      text: 'Se connecter',
-                      onPressed: _handleLogin,
-                      isLoading: isLoading,
                     ),
+                  ),
 
-                    // Lien mot de passe oublié
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: TextButton(
-                        onPressed: () => context.push('/forgot-password'),
-                        child: const Text('Mot de passe oublié ?'),
-                      ),
-                    ),
-
-                    // Séparateur
-                    const Row(
+                  // Séparateur
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Row(
                       children: [
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('OU'),
+                          child: Text(
+                            'OU',
+                            style: TextStyle(
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
                         ),
                         Expanded(child: Divider()),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  // Bouton d'inscription
+                  AuthButton(
+                    text: 'Créer un compte',
+                    onPressed: () => context.push('/register'),
+                    isOutlined: true,
+                  ),
 
-                    // Bouton d'inscription
-                    AuthButton(
-                      text: 'Créer un compte',
-                      onPressed: () => context.push('/register'),
-                      isOutlined: true,
-                    ),
-                  ],
-                ),
+                  // Espace inférieur pour meilleur centrage
+                  SizedBox(height: screenSize.height * 0.05),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

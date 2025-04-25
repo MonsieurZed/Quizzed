@@ -6,12 +6,42 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quizzzed/services/auth_service.dart';
+import 'package:quizzzed/services/logger_service.dart';
 
 class ThemeService extends ChangeNotifier {
   // Singleton pattern
   static final ThemeService _instance = ThemeService._internal();
   factory ThemeService() => _instance;
-  ThemeService._internal();
+
+  // Logger service
+  final logger = LoggerService();
+  final String logTag = 'ThemeService';
+
+  // Auth service (sera injecté)
+  AuthService? _authService;
+
+  // Initialiser avec l'Auth Service
+  void setAuthService(AuthService authService) {
+    _authService = authService;
+    // Charger les préférences utilisateur si disponibles
+    _loadThemeFromUserProfile();
+
+    // Écouter les changements d'authentification
+    _authService!.authStateChanges.listen((user) {
+      if (user != null) {
+        _loadThemeFromUserProfile();
+      }
+    });
+  }
+
+  ThemeService._internal() {
+    _loadThemePreference();
+  }
+
+  // Clé utilisée pour sauvegarder la préférence de thème localement
+  static const String _themeKey = 'isDarkMode';
 
   // Mode sombre par défaut à false
   bool _isDarkMode = false;
@@ -19,6 +49,82 @@ class ThemeService extends ChangeNotifier {
   // Getters
   bool get isDarkMode => _isDarkMode;
   ThemeData get currentTheme => _isDarkMode ? darkTheme : lightTheme;
+
+  // Chargement de la préférence de thème depuis les SharedPreferences (stockage local)
+  Future<void> _loadThemePreference() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final bool storedTheme = prefs.getBool(_themeKey) ?? false;
+      if (_isDarkMode != storedTheme) {
+        _isDarkMode = storedTheme;
+        notifyListeners();
+      }
+    } catch (e) {
+      // En cas d'erreur, utiliser le thème par défaut
+      logger.warning(
+        'Erreur lors du chargement de la préférence de thème locale: $e',
+        tag: logTag,
+      );
+    }
+  }
+
+  // Chargement du thème depuis le profil utilisateur (Firebase)
+  Future<void> _loadThemeFromUserProfile() async {
+    if (_authService == null || !_authService!.isLoggedIn) {
+      return;
+    }
+
+    try {
+      final user = _authService!.currentUserModel;
+      if (user != null) {
+        final bool userTheme = user.isDarkMode;
+        if (_isDarkMode != userTheme) {
+          _isDarkMode = userTheme;
+          // Mettre à jour également la préférence locale
+          _saveThemePreference(userTheme);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      logger.warning(
+        'Erreur lors du chargement du thème depuis le profil: $e',
+        tag: logTag,
+      );
+    }
+  }
+
+  // Sauvegarde de la préférence de thème localement
+  Future<void> _saveThemePreference(bool isDark) async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_themeKey, isDark);
+    } catch (e) {
+      logger.warning(
+        'Erreur lors de la sauvegarde de la préférence de thème locale: $e',
+        tag: logTag,
+      );
+    }
+  }
+
+  // Sauvegarde de la préférence de thème dans Firebase
+  Future<void> _saveThemeToUserProfile(bool isDark) async {
+    if (_authService == null || !_authService!.isLoggedIn) {
+      return;
+    }
+
+    try {
+      await _authService!.updateUserProfile(isDarkMode: isDark);
+      logger.debug(
+        'Thème sauvegardé dans le profil utilisateur: $isDark',
+        tag: logTag,
+      );
+    } catch (e) {
+      logger.error(
+        'Erreur lors de la sauvegarde du thème dans le profil: $e',
+        tag: logTag,
+      );
+    }
+  }
 
   // Couleurs principales de l'application pour générer les schemes
   static const Color primarySeedColor = Color(0xFF6750A4);
@@ -130,6 +236,8 @@ class ThemeService extends ChangeNotifier {
   // Bascule entre les modes clair et sombre
   void toggleTheme() {
     _isDarkMode = !_isDarkMode;
+    _saveThemePreference(_isDarkMode);
+    _saveThemeToUserProfile(_isDarkMode);
     notifyListeners();
   }
 
@@ -137,6 +245,8 @@ class ThemeService extends ChangeNotifier {
   void setDarkMode(bool value) {
     if (_isDarkMode != value) {
       _isDarkMode = value;
+      _saveThemePreference(_isDarkMode);
+      _saveThemeToUserProfile(_isDarkMode);
       notifyListeners();
     }
   }

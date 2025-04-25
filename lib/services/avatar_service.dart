@@ -53,22 +53,4 @@ class AvatarService {
       return [];
     }
   }
-
-  /// Obtient le chemin complet d'un avatar à partir de son nom de fichier
-  static String getAvatarPath(String avatarFileName) {
-    if (avatarFileName.contains('/')) {
-      // Si le chemin complet est déjà fourni
-      return avatarFileName;
-    }
-    // Sinon, on ajoute le chemin de base
-    return '$avatarPath$avatarFileName';
-  }
-
-  /// Extrait le nom de fichier à partir d'un chemin complet
-  static String getAvatarFileName(String avatarPath) {
-    if (avatarPath.contains('/')) {
-      return avatarPath.split('/').last;
-    }
-    return avatarPath;
-  }
 }

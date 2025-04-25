@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/services/avatar_service.dart';
+import 'package:quizzzed/widgets/profile/avatar_preview.dart';
 
 class AvatarSelector extends StatefulWidget {
   final String? currentAvatar;
@@ -98,13 +99,10 @@ class _AvatarSelectorState extends State<AvatarSelector> {
                         width: 3,
                       ),
                     ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        avatar,
-                        width: widget.size,
-                        height: widget.size,
-                        fit: BoxFit.cover,
-                      ),
+                    child: AvatarDisplay(
+                      avatar: avatar.split('/').last.replaceAll('.png', ''),
+                      size: widget.size,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 );

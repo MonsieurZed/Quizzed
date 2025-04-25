@@ -1,16 +1,18 @@
 // filepath: d:\GIT\quizzzed\lib\widgets\shared\loading_display.dart
-/// Loading Display
+/// Widget d'affichage de chargement
 ///
-/// Widget pour afficher une animation de chargement avec un message optionnel
+/// Affiche un indicateur de chargement avec un message facultatif
 library;
 
 import 'package:flutter/material.dart';
 
+/// Widget pour afficher un indicateur de chargement avec un message
 class LoadingDisplay extends StatelessWidget {
+  /// Message à afficher avec l'indicateur de chargement
   final String? message;
-  final double size;
 
-  const LoadingDisplay({super.key, this.message, this.size = 40.0});
+  /// Constructeur
+  const LoadingDisplay({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -18,25 +20,14 @@ class LoadingDisplay extends StatelessWidget {
 
     return Center(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: CircularProgressIndicator(
-              strokeWidth: size / 10,
-              color: theme.colorScheme.primary,
-            ),
-          ),
+          const CircularProgressIndicator(),
           if (message != null) ...[
             const SizedBox(height: 16),
             Text(
               message!,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withAlpha(
-                  (255 * 0.7).toInt(),
-                ),
-              ),
+              style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
           ],

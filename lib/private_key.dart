@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class PrivateKey {
-  static const admin_email = "thibault.feuvrier@hotmail.fr";
+  static const admin_email = "tdhibault.feuvrier@hotmail.fr";
   static const admin_password = "kainna66";
   // Configuration Firebase pour l'application web
   static const player_email = "michelo";

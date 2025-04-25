@@ -5,12 +5,16 @@
 library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/widgets.dart';
 import 'package:quizzzed/config/app_config.dart';
-import 'package:quizzzed/models/user/user_model.dart';
+import 'package:quizzzed/models/lobby/lobby_player_model.dart';
+import 'package:quizzzed/utils/color_utils.dart';
 
 enum LobbyVisibility { public, private }
 
-enum LobbyStatus { waitingForPlayers, playing, finished }
+enum LobbyJoinPolicy { open, approval, inviteOnly }
+
+enum LobbyStatus { waitingForPlayers, playing, finished, waiting }
 
 class LobbyModel {
   final String id;
@@ -28,6 +32,7 @@ class LobbyModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<LobbyPlayerModel> players;
+  final Color? color;
 
   // Propriété pour faciliter l'accès au code d'accès dans les vues
   String? get code => accessCode.isNotEmpty ? accessCode : null;
@@ -54,6 +59,7 @@ class LobbyModel {
     required this.createdAt,
     required this.updatedAt,
     required this.players,
+    required this.color,
   });
 
   // Créer un nouveau lobby
@@ -83,6 +89,7 @@ class LobbyModel {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       players: [],
+      color: AppConfig.defaultUserColor,
     );
   }
 
@@ -105,6 +112,7 @@ class LobbyModel {
       allowLateJoin: map['allowLateJoin'] ?? false,
       status: _parseStatus(map['status']),
       isInProgress: map['isInProgress'] ?? false,
+      color: ColorUtils.fromValue(map['color']) ?? AppConfig.defaultUserColor,
       quizId: map['quizId'],
       createdAt:
           map['createdAt'] != null
@@ -149,6 +157,8 @@ class LobbyModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'players': players.map((player) => player.toMap()).toList(),
+      // Conversion de l'objet Color en chaîne numérique pour Firestore
+      'color': ColorUtils.toStorageValue(color),
     };
   }
 
@@ -181,6 +191,7 @@ class LobbyModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<LobbyPlayerModel>? players,
+    Color? color,
   }) {
     return LobbyModel(
       id: id ?? this.id,
@@ -198,6 +209,7 @@ class LobbyModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       players: players ?? this.players,
+      color: color ?? this.color,
     );
   }
 
@@ -228,96 +240,5 @@ class LobbyModel {
       return LobbyStatus.finished;
     }
     return LobbyStatus.waitingForPlayers;
-  }
-}
-
-class LobbyPlayerModel {
-  final String userId;
-  final String displayName;
-  final String avatarUrl;
-  final String?
-  avatarBackgroundColor; // Ajout de la couleur de fond pour l'avatar
-  final bool isHost;
-  final bool isReady;
-  final DateTime joinedAt;
-  final DateTime? lastActive;
-
-  LobbyPlayerModel({
-    required this.userId,
-    required this.displayName,
-    required this.avatarUrl,
-    this.avatarBackgroundColor, // Couleur de fond optionnelle
-    required this.isHost,
-    required this.isReady,
-    required this.joinedAt,
-    this.lastActive,
-  });
-
-  factory LobbyPlayerModel.fromUser(UserModel user, {bool isHost = false}) {
-    return LobbyPlayerModel(
-      userId: user.uid,
-      displayName: user.displayName!,
-      avatarUrl: user.photoUrl!,
-      avatarBackgroundColor:
-          user.avatarBackgroundColor, // Récupération de la couleur depuis le modèle utilisateur
-      isHost: isHost,
-      isReady: isHost, // L'hôte est automatiquement prêt
-      joinedAt: DateTime.now(),
-      lastActive: DateTime.now(),
-    );
-  }
-
-  factory LobbyPlayerModel.fromMap(Map<String, dynamic> data) {
-    return LobbyPlayerModel(
-      userId: data['userId'] ?? '',
-      displayName: data['displayName'] ?? '',
-      avatarUrl: data['avatarUrl'] ?? '',
-      avatarBackgroundColor:
-          data['avatarBackgroundColor'], // Récupération de la couleur depuis la map
-      isHost: data['isHost'] ?? false,
-      isReady: data['isReady'] ?? false,
-      joinedAt: (data['joinedAt'] as Timestamp).toDate(),
-      lastActive:
-          data['lastActive'] != null
-              ? (data['lastActive'] as Timestamp).toDate()
-              : null,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'displayName': displayName,
-      'avatarUrl': avatarUrl,
-      'avatarBackgroundColor':
-          avatarBackgroundColor, // Ajout de la couleur à la map
-      'isHost': isHost,
-      'isReady': isReady,
-      'joinedAt': Timestamp.fromDate(joinedAt),
-      'lastActive': lastActive != null ? Timestamp.fromDate(lastActive!) : null,
-    };
-  }
-
-  LobbyPlayerModel copyWith({
-    String? userId,
-    String? displayName,
-    String? avatarUrl,
-    String? avatarBackgroundColor, // Ajout de la couleur au copyWith
-    bool? isHost,
-    bool? isReady,
-    DateTime? joinedAt,
-    DateTime? lastActive,
-  }) {
-    return LobbyPlayerModel(
-      userId: userId ?? this.userId,
-      displayName: displayName ?? this.displayName,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      avatarBackgroundColor:
-          avatarBackgroundColor ?? this.avatarBackgroundColor,
-      isHost: isHost ?? this.isHost,
-      isReady: isReady ?? this.isReady,
-      joinedAt: joinedAt ?? this.joinedAt,
-      lastActive: lastActive ?? this.lastActive,
-    );
   }
 }

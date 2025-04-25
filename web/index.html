@@ -26,6 +26,32 @@
       var serviceWorkerVersion = null;
     </script>
 
+    <!-- Firebase SDK v9 avec API modulaire -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+    <!-- Configuration Firebase -->
+    <script>
+      // Configuration Firebase de l'application
+      var firebaseConfig = {
+        apiKey: "AIzaSyDZ-5IDDZH6JAwwLAVKLoTgopdF7EfixoI",
+        authDomain: "quizzed-base.firebaseapp.com",
+        databaseURL: "https://quizzed-base-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "quizzed-base",
+        storageBucket: "quizzed-base.firebasestorage.app",
+        messagingSenderId: "290804717986",
+        appId: "1:290804717986:web:e5b0b7e845cb51ee3ffafb",
+        measurementId: "G-VKXENK378H",
+      };
+
+      // On met la configuration à disposition de Flutter mais ON N'INITIALISE PAS Firebase ici
+      // Ce sera fait par le plugin firebase_core dans le code Dart
+      window.firebaseConfig = firebaseConfig;
+    </script>
+
     <!-- Scripts nécessaires pour Flutter Web -->
     <script src="flutter.js" defer></script>
   </head>
@@ -50,17 +76,5 @@
         });
       });
     </script>
-
-    <!-- Firebase Core - version compat pour compatibilité avec syntaxe ancienne -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-
-    <!-- Firebase Products - versions compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-
-    <!-- Notre configuration Firebase -->
-    <script src="firebase/firebase_config.js"></script>
   </body>
 </html>

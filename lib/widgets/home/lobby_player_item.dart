@@ -5,7 +5,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:quizzzed/models/quiz/lobby_model.dart';
+import 'package:quizzzed/models/lobby/lobby_player_model.dart';
+import 'package:quizzzed/widgets/profile/avatar_preview.dart';
 
 class LobbyPlayerItem extends StatefulWidget {
   final LobbyPlayerModel player;
@@ -42,7 +43,7 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
     );
 
     // Ne démarrer l'animation que si le joueur est en attente
-    if (!widget.player.isReady && !widget.player.isHost) {
+    if (!widget.player.isReady) {
       _animationController.forward();
     } else {
       _animationController.stop();
@@ -54,7 +55,7 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
     super.didUpdateWidget(oldWidget);
     // Gérer les changements d'état
     if (widget.player.isReady != oldWidget.player.isReady) {
-      if (widget.player.isReady || widget.player.isHost) {
+      if (widget.player.isReady) {
         _animationController.stop();
       } else {
         _animationController.repeat(reverse: true);
@@ -75,6 +76,9 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
         widget.player.lastActive != null &&
         DateTime.now().difference(widget.player.lastActive!).inMinutes <= 3;
 
+    // Déterminer la couleur d'arrière-plan de l'avatar à partir de la couleur de profil
+    Color? playerColor = widget.player.color;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 8),
@@ -94,7 +98,7 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
           width: 1,
         ),
         boxShadow:
-            widget.player.isReady || widget.player.isHost
+            widget.player.isReady
                 ? [
                   BoxShadow(
                     color: theme.colorScheme.primary.withAlpha(
@@ -110,15 +114,11 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Stack(
           children: [
-            CircleAvatar(
-              backgroundImage:
-                  widget.player.avatarUrl.isNotEmpty
-                      ? NetworkImage(widget.player.avatarUrl)
-                      : null,
-              child:
-                  widget.player.avatarUrl.isEmpty
-                      ? const Icon(Icons.person)
-                      : null,
+            // Utiliser AvatarDisplay avec la couleur de profil de l'utilisateur
+            AvatarDisplay(
+              avatar: widget.player.avatar,
+              size: 40,
+              color: playerColor,
             ),
             if (isLastActive)
               Positioned(
@@ -176,56 +176,40 @@ class _LobbyPlayerItemState extends State<LobbyPlayerItem>
             AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
+                // Définir les variables pour le statut et les couleurs
+                final bool isReady = widget.player.isReady;
+                final IconData statusIcon =
+                    isReady ? Icons.check_circle : Icons.hourglass_empty;
+                final String statusText = isReady ? 'Prêt' : 'En attente';
+                final Color statusColor =
+                    isReady ? theme.colorScheme.primary : theme.disabledColor;
+                final Color containerColor =
+                    isReady
+                        ? theme.colorScheme.primaryContainer
+                        : theme.disabledColor.withAlpha((255 * 0.1).toInt());
+
                 return Transform.scale(
-                  scale:
-                      widget.player.isReady || widget.player.isHost
-                          ? 1.0
-                          : _pulseAnimation.value,
+                  scale: isReady ? 1.0 : _pulseAnimation.value,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color:
-                          widget.player.isReady || widget.player.isHost
-                              ? theme.colorScheme.primaryContainer
-                              : theme.disabledColor.withAlpha(
-                                (255 * 0.1).toInt(),
-                              ),
+                      color: containerColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color:
-                            widget.player.isReady || widget.player.isHost
-                                ? theme.colorScheme.primary
-                                : theme.disabledColor,
-                        width: 1,
-                      ),
+                      border: Border.all(color: statusColor, width: 1),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          widget.player.isReady || widget.player.isHost
-                              ? Icons.check_circle
-                              : Icons.hourglass_empty,
-                          size: 14,
-                          color:
-                              widget.player.isReady || widget.player.isHost
-                                  ? theme.colorScheme.primary
-                                  : theme.disabledColor,
-                        ),
+                        Icon(statusIcon, size: 14, color: statusColor),
                         const SizedBox(width: 4),
                         Text(
-                          widget.player.isReady || widget.player.isHost
-                              ? 'Prêt'
-                              : 'En attente',
+                          statusText,
                           style: TextStyle(
                             fontSize: 12,
-                            color:
-                                widget.player.isReady || widget.player.isHost
-                                    ? theme.colorScheme.primary
-                                    : theme.disabledColor,
+                            color: statusColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

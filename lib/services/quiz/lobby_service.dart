@@ -7,17 +7,23 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quizzzed/config/app_config.dart';
-import 'package:quizzzed/models/quiz/lobby_model.dart';
+import 'package:quizzzed/models/chat/chat_message_model.dart';
+import 'package:quizzzed/models/lobby/lobby_model.dart';
+import 'package:quizzzed/models/lobby/lobby_player_model.dart';
 import 'package:quizzzed/models/user/user_model.dart';
+import 'package:quizzzed/services/chat_service.dart';
 import 'package:quizzzed/services/firebase_service.dart';
 import 'package:quizzzed/services/logger_service.dart';
+import 'package:quizzzed/services/error_message_service.dart';
 
 class LobbyService {
   final FirebaseService _firebaseService = FirebaseService();
   final LoggerService _logger = LoggerService();
+  final ErrorMessageService _errorService = ErrorMessageService();
+  final ChatService _chatService = ChatService();
 
   // Collection Firestore pour les lobbys
-  static const String _collectionName = 'lobbys';
+  static const String _collectionName = 'lobbies';
 
   // Référence à la collection Firestore
   CollectionReference<Map<String, dynamic>> get _lobbysCollection =>
@@ -60,6 +66,13 @@ class LobbyService {
         'Lobby créé',
         tag: 'LobbyService',
         data: {'lobbyId': newLobby.id, 'name': newLobby.name},
+      );
+
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: newLobby.id,
+        text: "Lobby \"${newLobby.name}\" créé par ${host.displayName}",
+        channel: ChatChannel.lobby,
       );
 
       return newLobby;
@@ -136,6 +149,13 @@ class LobbyService {
         },
       );
 
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: lobbyId,
+        text: "${user.displayName} a rejoint le lobby",
+        channel: ChatChannel.lobby,
+      );
+
       return true;
     } catch (e, stackTrace) {
       _logger.error(
@@ -209,6 +229,9 @@ class LobbyService {
       );
       if (playerIndex == -1) return false;
 
+      // Récupérer les infos du joueur
+      final player = lobby.players[playerIndex];
+
       // Mettre à jour le statut du joueur
       final updatedPlayers = List<LobbyPlayerModel>.from(lobby.players);
       updatedPlayers[playerIndex] = updatedPlayers[playerIndex].copyWith(
@@ -221,6 +244,13 @@ class LobbyService {
         'players': updatedPlayers.map((p) => p.toMap()).toList(),
         'updatedAt': Timestamp.now(),
       });
+
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: lobbyId,
+        text: "${player.displayName} est ${isReady ? 'prêt' : 'en attente'}",
+        channel: ChatChannel.lobby,
+      );
 
       return true;
     } catch (e, stackTrace) {
@@ -242,11 +272,23 @@ class LobbyService {
 
       final lobby = LobbyModel.fromFirestore(lobbyDoc);
 
+      // Trouver le joueur qui quitte
+      final player = lobby.players.firstWhere(
+        (player) => player.userId == userId,
+      );
+
       // Vérifier si l'utilisateur est l'hôte
       final isHost = lobby.hostId == userId;
 
       // Si c'est l'hôte, supprimer le lobby
       if (isHost) {
+        // Envoyer un message système avant de supprimer le lobby
+        await _chatService.sendSystemMessage(
+          lobbyId: lobbyId,
+          text: "L'hôte ${player.displayName} a quitté - Le lobby a été fermé",
+          channel: ChatChannel.lobby,
+        );
+
         await _lobbysCollection.doc(lobbyId).delete();
         _logger.info(
           'Lobby supprimé car l\'hôte l\'a quitté',
@@ -274,6 +316,13 @@ class LobbyService {
           'userId': userId,
           'remainingPlayers': updatedPlayers.length,
         },
+      );
+
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: lobbyId,
+        text: "${player.displayName} a quitté le lobby",
+        channel: ChatChannel.lobby,
       );
 
       return true;
@@ -314,6 +363,11 @@ class LobbyService {
         return false;
       }
 
+      // Trouver le joueur qui va être expulsé
+      final playerToKick = lobby.players.firstWhere(
+        (player) => player.userId == playerIdToKick,
+      );
+
       // Retirer le joueur de la liste
       final updatedPlayers =
           lobby.players
@@ -334,6 +388,13 @@ class LobbyService {
           'kickedPlayerId': playerIdToKick,
           'byHostId': hostId,
         },
+      );
+
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: lobbyId,
+        text: "${playerToKick.displayName} a été expulsé du lobby",
+        channel: ChatChannel.lobby,
       );
 
       return true;
@@ -378,24 +439,62 @@ class LobbyService {
         return false;
       }
 
+      // Trouver le nom de l'hôte
+      final host = lobby.players.firstWhere(
+        (player) => player.userId == hostId,
+      );
+
       // Préparer les mises à jour
       final updates = <String, dynamic>{'updatedAt': Timestamp.now()};
 
-      if (name != null) updates['name'] = name;
+      // Construire le message pour le chat
+      String updateMessage =
+          "${host.displayName} a modifié les paramètres du lobby:";
+      bool hasChanges = false;
+
+      if (name != null) {
+        updates['name'] = name;
+        updateMessage += "\n- Nom: ${lobby.name} → $name";
+        hasChanges = true;
+      }
+
       if (visibility != null) {
         updates['visibility'] = visibility.toString();
+        updateMessage +=
+            "\n- Visibilité: ${lobby.visibility.toFrench()} → ${visibility.toFrench()}";
+        hasChanges = true;
+
         // Si passage à privé, générer un code d'accès
         if (visibility == LobbyVisibility.private && lobby.accessCode.isEmpty) {
-          updates['accessCode'] = _generateRandomCode();
+          final code = _generateRandomCode();
+          updates['accessCode'] = code;
+          updateMessage += "\n- Code d'accès généré: $code";
         }
         // Si passage à public, supprimer le code d'accès
         if (visibility == LobbyVisibility.public) {
           updates['accessCode'] = '';
+          updateMessage += "\n- Code d'accès supprimé";
         }
       }
-      if (maxPlayers != null) updates['maxPlayers'] = maxPlayers;
-      if (minPlayers != null) updates['minPlayers'] = minPlayers;
-      if (allowLateJoin != null) updates['allowLateJoin'] = allowLateJoin;
+
+      if (maxPlayers != null) {
+        updates['maxPlayers'] = maxPlayers;
+        updateMessage += "\n- Joueurs max: ${lobby.maxPlayers} → $maxPlayers";
+        hasChanges = true;
+      }
+
+      if (minPlayers != null) {
+        updates['minPlayers'] = minPlayers;
+        updateMessage += "\n- Joueurs min: ${lobby.minPlayers} → $minPlayers";
+        hasChanges = true;
+      }
+
+      if (allowLateJoin != null) {
+        updates['allowLateJoin'] = allowLateJoin;
+        updateMessage +=
+            "\n- Rejoindre en cours: ${lobby.allowLateJoin ? 'Oui' : 'Non'} → ${allowLateJoin ? 'Oui' : 'Non'}";
+        hasChanges = true;
+      }
 
       // Mettre à jour le document
       await _lobbysCollection.doc(lobbyId).update(updates);
@@ -405,6 +504,15 @@ class LobbyService {
         tag: 'LobbyService',
         data: {'lobbyId': lobbyId, 'byHostId': hostId, 'updates': updates},
       );
+
+      // Envoyer un message système dans le chat du lobby si des changements ont été effectués
+      if (hasChanges) {
+        await _chatService.sendSystemMessage(
+          lobbyId: lobbyId,
+          text: updateMessage,
+          channel: ChatChannel.lobby,
+        );
+      }
 
       return true;
     } catch (e, stackTrace) {
@@ -499,6 +607,11 @@ class LobbyService {
         return false;
       }
 
+      // Récupérer les infos de l'hôte
+      final host = lobby.players.firstWhere(
+        (player) => player.userId == hostId,
+      );
+
       // Vérifier si le quiz peut démarrer
       if (!lobby.canStart) {
         _logger.warning(
@@ -528,6 +641,14 @@ class LobbyService {
           'quizId': lobby.quizId,
           'playerCount': lobby.players.length,
         },
+      );
+
+      // Envoyer un message système dans le chat du lobby
+      await _chatService.sendSystemMessage(
+        lobbyId: lobbyId,
+        text:
+            "🎮 ${host.displayName} a démarré la partie avec ${lobby.players.length} joueurs",
+        channel: ChatChannel.lobby,
       );
 
       return true;
@@ -588,5 +709,19 @@ class LobbyService {
     }
 
     return code;
+  }
+}
+
+// Extension pour la visibilité du lobby
+extension LobbyVisibilityExtension on LobbyVisibility {
+  String toFrench() {
+    switch (this) {
+      case LobbyVisibility.public:
+        return 'Publique';
+      case LobbyVisibility.private:
+        return 'Privée';
+      default:
+        return toString();
+    }
   }
 }

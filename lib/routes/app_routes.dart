@@ -10,12 +10,11 @@ import 'package:quizzzed/services/auth_service.dart';
 import 'package:quizzzed/views/auth/forgot_password_view.dart';
 import 'package:quizzzed/views/auth/login_view.dart';
 import 'package:quizzzed/views/auth/register_view.dart';
-import 'package:quizzzed/views/debug/debug_view.dart';
 import 'package:quizzzed/views/home/components/index.dart';
-import 'package:quizzzed/views/home/create_lobby_view.dart';
+import 'package:quizzzed/views/home/lobby/create_lobby_view.dart';
 import 'package:quizzzed/views/home/home_view.dart';
-import 'package:quizzzed/views/home/lobbies_view.dart';
-import 'package:quizzzed/views/home/lobby_detail_view.dart';
+import 'package:quizzzed/views/home/lobby/lobby_list_view.dart';
+import 'package:quizzzed/views/home/lobby/lobby_detail_view.dart';
 
 class AppRoutes {
   // Noms des routes pour faciliter la navigation
@@ -134,7 +133,7 @@ class AppRoutes {
           GoRoute(
             path: '/home/lobbies',
             name: lobbies,
-            builder: (context, state) => const LobbiesView(),
+            builder: (context, state) => const LobbyListView(),
             routes: [
               // Détail d'un lobby
               GoRoute(
@@ -177,7 +176,9 @@ class AppRoutes {
       GoRoute(
         path: '/debug',
         name: debug,
-        builder: (context, state) => const DebugView(),
+        builder:
+            (context, state) =>
+                const Scaffold(body: Center(child: Text('Page de débogage'))),
       ),
     ],
   );
@@ -194,11 +195,6 @@ class AppRoutes {
           router.replace('/login');
         }
       });
-      return null;
-    }
-
-    // Permettre l'accès à la page de débogage sans authentification
-    if (state.fullPath == '/debug') {
       return null;
     }
 

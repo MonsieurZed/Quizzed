@@ -137,6 +137,94 @@ lib/
   - Utilitaires pour manipuler les chemins d'avatars
   - Compatibilité avec Flutter Web
 
+## 💬 Système de Chat
+
+Le système de chat de l'application Quizzzed offre une communication en temps réel entre les utilisateurs dans les lobbies et sessions de quiz.
+
+### Architecture du système de chat
+
+#### Modèle de données
+
+- `ChatMessageModel`: Représentation structurée des messages avec:
+  - ID unique
+  - Contenu du message
+  - Informations sur l'expéditeur (ID, nom, avatar)
+  - Horodatage
+  - Type de message (utilisateur, système, notification)
+
+#### Services
+
+- **ChatService**:
+  - Gestion des collections Firestore pour les messages
+  - Envoi et récupération de messages en temps réel
+  - Écoute des changements avec streams
+  - Support pour les différents types de messages
+  - Filtrage par contexte (lobby, quiz)
+  - Gestion des notifications système automatiques
+
+#### Interface utilisateur
+
+- **ChatWidget**:
+
+  - Interface complète de chat avec scrolling automatique
+  - Affichage des messages selon le type avec styles différenciés
+  - Zone de saisie avec validation
+  - Animation lors de nouveaux messages
+  - Adaptation responsive
+  - Gestion de l'état de chargement
+
+- **ChatBubble**:
+  - Rendu visuel d'un message individuel
+  - Styles différents pour les messages de l'utilisateur courant et les autres
+  - Affichage configurable de l'avatar et de l'horodatage
+  - Couleurs adaptées au thème de l'application
+
+### Fonctionnalités
+
+1. **Messages en temps réel**:
+
+   - Synchronisation instantanée des messages
+   - Indicateur visuel pour les nouveaux messages
+   - Défilement automatique vers le dernier message
+
+2. **Notifications système**:
+
+   - Messages automatiques pour les événements importants (joueur rejoint/quitte)
+   - Style visuel distinct pour les messages système
+   - Horodatage pour tous les événements
+
+3. **Support contextuel**:
+
+   - Isolation des messages par contexte (lobby ou session quiz)
+   - Persistance des messages pendant toute la durée de vie du contexte
+   - Filtrage automatique basé sur l'ID du contexte courant
+
+4. **Intégration avec le système d'utilisateurs**:
+
+   - Affichage cohérent des avatars et noms d'utilisateurs
+   - Messages associés au profil de l'expéditeur
+
+5. **Gestion de l'état**:
+   - États de chargement et d'erreur gérés
+   - Fallback pour les situations sans message
+   - Conservation du contexte lors du changement de vue
+
+### Implémentation technique
+
+- Utilisation de Firebase Firestore pour le stockage et la synchronisation
+- Streams pour l'actualisation en temps réel
+- Architecture en couches (modèle, service, widgets)
+- Adaptation aux thèmes clair et sombre
+- Optimisation des performances avec limitation du nombre de messages chargés
+
+### Bonnes pratiques d'utilisation
+
+1. Toujours initialiser le chat avec un contexte spécifique (lobbyId ou sessionId)
+2. Utiliser la méthode `chatService.sendMessage()` pour envoyer des messages utilisateur
+3. Utiliser la méthode `chatService.sendSystemMessage()` pour les notifications automatiques
+4. Configurer `autoScroll` à true pour une meilleure expérience utilisateur
+5. Implémenter une politique de nettoyage des anciens messages pour optimiser les performances
+
 ## ⚙️ Configuration Globale
 
 Le fichier `app_config.dart` contient les constantes et paramètres globaux:
@@ -406,44 +494,52 @@ Le développement du système de lobby a été complété avec les fonctionnalit
 
 #### Fonctionnalités avancées
 
-1. **Affichage optimisé des joueurs**
+1. **Gestion améliorée des lobbies**
+
+   - Un utilisateur ne peut rejoindre qu'un seul lobby à la fois
+   - Déconnexion automatique du lobby précédent lors de la connexion à un nouveau
+   - Indicateur visuel du lobby actuel dans la liste des lobbies
+   - Accès rapide au lobby actuel via un raccourci dans le menu latéral
+   - Persistance de la connexion au lobby même en changeant de page
+
+2. **Affichage optimisé des joueurs**
 
    - Indicateurs visuels clairs pour les joueurs prêts/en attente
    - Animation de pulsation pour les joueurs en attente
    - Point vert pour indiquer les joueurs actifs récemment
 
-2. **Moteur de recherche de lobby**
+3. **Moteur de recherche de lobby**
 
    - Barre de recherche par nom ou catégorie
    - Toggle pour afficher/masquer la recherche
    - Messages adaptés lorsqu'aucun résultat n'est trouvé
 
-3. **Gestion de l'activité des joueurs**
+4. **Gestion de l'activité des joueurs**
 
    - Détection automatique des joueurs déconnectés
    - Suppression des joueurs inactifs après 3 minutes
    - Suppression des lobbies inactifs après une heure
 
-4. **Animation lors du démarrage d'un quiz**
+5. **Animation lors du démarrage d'un quiz**
 
    - Animation de cercle qui s'agrandit à partir du centre
    - Texte apparaissant progressivement
    - Transition fluide vers la vue de session de quiz
 
-5. **Gestion des erreurs**
+6. **Gestion des erreurs**
 
    - Correction des défauts d'interface pendant la phase de build
    - Optimisation du système de notification avec Future.microtask
    - Meilleure gestion des exceptions
 
-6. **Contrôle des lobbies**
+7. **Contrôle des lobbies**
 
    - Bouton de suppression de lobby pour l'hôte avec confirmation
    - Limite d'un seul lobby actif par utilisateur pour éviter la prolifération
    - Dialogue de confirmation pour les actions destructives (supprimer un lobby)
    - Séparation claire des actions de sortie et de suppression
 
-7. **Génération de noms aléatoires pour les lobbies**
+8. **Génération de noms aléatoires pour les lobbies**
 
    - Bouton de génération automatique de noms créatifs pour les lobbies
    - Dictionnaires d'adjectifs et de substantifs stockés dans `assets/dictionary/`
@@ -451,7 +547,7 @@ Le développement du système de lobby a été complété avec les fonctionnalit
    - Interface intuitive avec bouton de rafraîchissement à côté du champ de nom
    - Architecture flexible permettant d'étendre facilement les dictionnaires
 
-8. **Synchronisation des profils dans les lobbies**
+9. **Synchronisation des profils dans les lobbies**
    - Mise à jour automatique des informations utilisateur dans tous les lobbies lorsque le profil est modifié
    - Synchronisation de l'avatar, du nom d'affichage et de la couleur de fond
    - Système robuste qui conserve la cohérence visuelle à travers l'application
@@ -478,3 +574,78 @@ Les avatars sont organisés dans deux dossiers :
 - **assets/images/avatars1024/** : Avatars en haute résolution pour les prévisualisations détaillées
 
 L'application explore dynamiquement ces dossiers pour offrir aux utilisateurs un large choix d'avatars personnalisés.
+
+## 🎨 Système de couleurs de profil pour les avatars
+
+L'application Quizzzed implémente un système cohérent de couleurs de profil pour les avatars utilisateurs, assurant une identité visuelle cohérente à travers toutes les interfaces de l'application.
+
+### Structure et organisation
+
+- **AppConfig**: Contient la classe `ProfileColor` et la liste des couleurs disponibles
+
+  - La classe `ProfileColor` définit une couleur disponible pour le profil avec:
+    - Nom de la couleur (ex: "Rouge", "Bleu", "Vert")
+    - Valeur de la couleur (instance de `Color`)
+    - Couleur de texte adaptée pour le contraste (blanc par défaut, noir pour les couleurs claires)
+  - `availableProfileColors`: Liste de ~40 options prédéfinies couvrant tout le spectre chromatique
+
+- **ColorUtils**: Classe utilitaire pour la manipulation des couleurs
+  - `fromValue()`: Convertit différentes représentations (int, string, nom) en objet Color
+  - `toStorageValue()`: Standardise le format de stockage des couleurs
+  - `getProfileColorByName()`: Trouve une couleur de profil par son nom
+  - `getProfileColorFromColor()`: Trouve une ProfileColor correspondant à une Color
+  - `getTextColorForBackground()`: Détermine la couleur de texte appropriée pour un fond
+
+### Intégration dans l'interface utilisateur
+
+La couleur de profil sélectionnée par l'utilisateur est utilisée de manière cohérente dans toute l'application:
+
+1. **Chat**:
+
+   - Arrière-plan de l'avatar dans les bulles de chat
+   - Couleur des bulles de messages pour les autres utilisateurs
+   - Contraste automatique adapté pour la lisibilité du texte
+
+2. **Lobbies**:
+
+   - Couleur d'arrière-plan des avatars dans la liste des joueurs
+   - Couleur de la carte du lobby si l'utilisateur est l'hôte
+   - Indicateurs visuels cohérents avec la couleur de profil
+
+3. **Profil utilisateur**:
+   - Aperçu en temps réel lors de la sélection de couleur
+   - Persistance dans les données utilisateur (Firestore)
+   - Sélecteur visuel avec échantillons de toutes les couleurs disponibles
+
+### Implémentation technique
+
+- La couleur est stockée comme valeur numérique dans Firestore via `ColorUtils.toStorageValue()`
+- Les modèles utilisent `ColorUtils.fromValue()` pour la désérialisation cohérente
+- La configuration des couleurs disponibles est centralisée dans `AppConfig`
+- Les widgets utilisent `ColorUtils` pour obtenir des couleurs de texte contrastées
+
+### Synchronisation
+
+Lorsqu'un utilisateur modifie sa couleur de profil, cette modification est propagée automatiquement:
+
+1. Mise à jour dans Firebase Auth et Firestore (`UserModel`)
+2. Apparition immédiate dans tous les affichages d'avatar de cet utilisateur
+3. Actualisation dans les messages de chat et listes de joueurs dans les lobbies
+
+### Avantages de l'implémentation refactorisée
+
+1. **Centralisation**: Toutes les définitions de couleurs dans un seul endroit (`AppConfig`)
+2. **Cohérence**: Manipulation standardisée des couleurs via `ColorUtils`
+3. **Robustesse**: Gestion améliorée des erreurs et des formats invalides
+4. **Maintenabilité**: Logique de conversion séparée des modèles de données
+5. **Extensibilité**: Ajout facile de nouvelles couleurs ou méthodes utilitaires
+
+### Bonnes pratiques d'utilisation
+
+1. Utiliser `ColorUtils.fromValue()` pour convertir des données de stockage en couleurs
+2. Utiliser `ColorUtils.toStorageValue()` pour préparer les couleurs au stockage
+3. Accéder aux couleurs prédéfinies via `AppConfig.availableProfileColors`
+4. Utiliser `ColorUtils.getTextColorForBackground()` pour garantir la lisibilité du texte
+5. Prévoir des couleurs de repli pour les cas où la couleur n'est pas définie
+
+Cette architecture refactorisée renforce l'identité visuelle des utilisateurs et améliore l'expérience utilisateur en maintenant une cohérence visuelle à travers toutes les interfaces de l'application, tout en rendant le code plus maintainable.

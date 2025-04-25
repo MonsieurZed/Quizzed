@@ -11,7 +11,7 @@ import 'package:quizzzed/models/user/user_model.dart';
 import 'package:quizzzed/routes/app_routes.dart';
 import 'package:quizzzed/services/auth_service.dart';
 import 'package:quizzzed/services/logger_service.dart';
-import 'package:quizzzed/services/quiz/quiz_service.dart';
+import 'package:quizzzed/services/quiz/game_service.dart';
 import 'package:quizzzed/widgets/home/quiz_category_card.dart';
 import 'package:quizzzed/widgets/home/recent_activity_card.dart';
 import 'package:quizzzed/widgets/home/stats_card.dart';
@@ -34,27 +34,36 @@ class _HomeContentState extends State<HomeContent> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-    _loadPopularQuizzes();
+    // Nous reportons le chargement après le premier build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCategories();
+      _loadPopularQuizzes();
+    });
   }
 
   Future<void> _loadCategories() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoadingCategories = true;
     });
 
     try {
-      final quizService = Provider.of<QuizService>(context, listen: false);
+      final quizService = Provider.of<GameService>(context, listen: false);
       final categories = await quizService.getCategories();
 
-      setState(() {
-        _categories = categories;
-        _isLoadingCategories = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoadingCategories = false;
+        });
+      }
     } catch (e, stackTrace) {
-      setState(() {
-        _isLoadingCategories = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+      }
       logger.error(
         'Erreur lors du chargement des catégories: $e',
         tag: logTag,
@@ -64,22 +73,28 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Future<void> _loadPopularQuizzes() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoadingQuizzes = true;
     });
 
     try {
-      final quizService = Provider.of<QuizService>(context, listen: false);
+      final quizService = Provider.of<GameService>(context, listen: false);
       final quizzes = await quizService.getPopularQuizzes(limit: 5);
 
-      setState(() {
-        _popularQuizzes = quizzes;
-        _isLoadingQuizzes = false;
-      });
+      if (mounted) {
+        setState(() {
+          _popularQuizzes = quizzes;
+          _isLoadingQuizzes = false;
+        });
+      }
     } catch (e, stackTrace) {
-      setState(() {
-        _isLoadingQuizzes = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingQuizzes = false;
+        });
+      }
       logger.error(
         'Erreur lors du chargement des quiz populaires: $e',
         tag: logTag,

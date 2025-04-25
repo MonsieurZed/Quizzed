@@ -7,15 +7,14 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quizzzed/config/app_config.dart';
-import 'package:quizzzed/controllers/lobby_controller.dart';
-import 'package:quizzzed/controllers/quiz_session_controller.dart';
+import 'package:quizzzed/controllers/lobby/lobby_controller.dart';
 import 'package:quizzzed/routes/app_routes.dart';
 import 'package:quizzzed/services/auth_service.dart';
+import 'package:quizzzed/services/chat_service.dart';
 import 'package:quizzzed/services/firebase_service.dart';
 import 'package:quizzzed/services/logger_service.dart';
-import 'package:quizzzed/services/quiz/quiz_service.dart';
+import 'package:quizzzed/services/quiz/game_service.dart'; // Ajout de l'import du QuizService
 import 'package:quizzzed/theme/theme_service.dart';
-import 'package:quizzzed/widgets/debug/debug_access_button.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,20 +43,33 @@ void main() async {
     // Continue sans Firebase en mode développement
   }
 
+  // Créer ThemeService en avance pour éviter les conflits
+  final themeService = ThemeService();
+
   runApp(
     MultiProvider(
       providers: [
         // Services d'infrastructure
         Provider<FirebaseService>.value(value: firebaseService),
 
-        // Gestion des thèmes
-        ChangeNotifierProvider(create: (_) => ThemeService()),
+        // Gestion des thèmes - utilisez ChangeNotifierProvider.value pour éviter de recréer le service
+        ChangeNotifierProvider<ThemeService>.value(value: themeService),
 
         // Gestion de l'authentification
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = AuthService();
+            // Connecter ThemeService à AuthService directement
+            themeService.setAuthService(authService);
+            return authService;
+          },
+        ),
 
-        // Services de quiz
-        ChangeNotifierProvider(create: (_) => QuizService()),
+        // Service de chat
+        Provider<ChatService>(create: (_) => ChatService()),
+
+        // Service de quiz
+        ChangeNotifierProvider<GameService>(create: (context) => GameService()),
 
         // Controllers pour les fonctionnalités de lobby et session
         ChangeNotifierProxyProvider<FirebaseService, LobbyController>(
@@ -65,15 +77,7 @@ void main() async {
               (context) => LobbyController(
                 firebaseService: context.read<FirebaseService>(),
                 authService: context.read<AuthService>(),
-              ),
-          update: (context, firebaseService, previous) => previous!,
-        ),
-
-        ChangeNotifierProxyProvider<FirebaseService, QuizSessionController>(
-          create:
-              (context) => QuizSessionController(
-                firebaseService: context.read<FirebaseService>(),
-                authService: context.read<AuthService>(),
+                chatService: context.read<ChatService>(),
               ),
           update: (context, firebaseService, previous) => previous!,
         ),
@@ -107,11 +111,7 @@ class QuizzzedApp extends StatelessWidget {
         if (child == null) return const SizedBox.shrink();
 
         return Overlay(
-          initialEntries: [
-            OverlayEntry(builder: (context) => child),
-            if (!AppEnvironment.isProduction)
-              OverlayEntry(builder: (context) => const DebugAccessButton()),
-          ],
+          initialEntries: [OverlayEntry(builder: (context) => child)],
         );
       },
     );

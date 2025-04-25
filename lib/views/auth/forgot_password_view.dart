@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:quizzzed/services/auth_service.dart';
+import 'package:quizzzed/services/validation_service.dart';
 import 'package:quizzzed/widgets/auth/auth_button.dart';
 import 'package:quizzzed/widgets/auth/auth_text_field.dart';
 
@@ -122,15 +123,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.done,
                         prefixIcon: const Icon(Icons.email_outlined),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer votre adresse email';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Veuillez entrer une adresse email valide';
-                          }
-                          return null;
-                        },
+                        validator: ValidationService.validateEmail,
                         onEditingComplete: _handleResetPassword,
                       ),
 

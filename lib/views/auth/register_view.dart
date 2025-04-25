@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:quizzzed/config/app_config.dart';
-import 'package:quizzzed/models/user/profile_color.dart';
 import 'package:quizzzed/services/auth_service.dart';
+import 'package:quizzzed/services/validation_service.dart';
 import 'package:quizzzed/widgets/auth/auth_button.dart';
 import 'package:quizzzed/widgets/auth/auth_text_field.dart';
 import 'package:quizzzed/widgets/profile/avatar_preview.dart';
@@ -42,7 +42,7 @@ class _RegisterViewState extends State<RegisterView> {
 
   // Nouveaux champs pour l'avatar et la couleur de fond
   String? _selectedAvatar;
-  String? _selectedColor;
+  Color? _selectedColor;
   bool _showAvatarSelector = false;
   bool _showColorSelector = false;
 
@@ -50,8 +50,8 @@ class _RegisterViewState extends State<RegisterView> {
   void initState() {
     super.initState();
     // Définir des valeurs par défaut
-    _selectedAvatar = AppConfig.defaultAvatarUrl;
-    _selectedColor = ProfileColor.availableColors[4].name; // Bleu par défaut
+    _selectedAvatar = AppConfig.defaultUserAvatar;
+    _selectedColor = AppConfig.defaultUserColor;
   }
 
   @override
@@ -101,13 +101,6 @@ class _RegisterViewState extends State<RegisterView> {
 
     // Valider le formulaire
     if (_formKey.currentState?.validate() ?? false) {
-      if (_passwordController.text != _confirmPasswordController.text) {
-        setState(() {
-          _errorMessage = 'Les mots de passe ne correspondent pas.';
-        });
-        return;
-      }
-
       setState(() {
         _errorMessage = null;
       });
@@ -123,10 +116,10 @@ class _RegisterViewState extends State<RegisterView> {
         );
 
         // Mettre à jour le profil avec l'avatar et la couleur après l'inscription
-        if (authService.currentUser != null) {
+        if (authService.currentFirebaseUser != null) {
           await authService.updateUserProfile(
-            photoUrl: _selectedAvatar,
-            avatarBackgroundColor: _selectedColor,
+            avatar: _selectedAvatar,
+            userColor: _selectedColor,
           );
         }
 
@@ -165,217 +158,239 @@ class _RegisterViewState extends State<RegisterView> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final isLoading = authService.isLoading;
+    final screenSize = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Inscription')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Logo et titre
-              Image.asset('assets/images/logo.png', height: 80),
-              const SizedBox(height: 24),
-              Text(
-                'Créer un compte',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 450, // Largeur maximale pour les grands écrans
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
               ),
-              const SizedBox(height: 32),
-
-              // Prévisualisation de l'avatar avec couleur
-              Center(
-                child: GestureDetector(
-                  onTap: _showAvatarSelectorDialog,
-                  child: Column(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Barre de navigation personnalisée pour remplacer AppBar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      AvatarPreview(
-                        avatarUrl: _selectedAvatar,
-                        backgroundColor: _selectedColor,
-                        size: 120,
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => context.go('/login'),
+                        tooltip: 'Retour à la connexion',
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Changer l\'avatar',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text('Inscription', style: theme.textTheme.titleLarge),
+                      const SizedBox(
+                        width: 48,
+                      ), // Pour équilibrer la mise en page
                     ],
                   ),
-                ),
-              ),
 
-              // Bouton pour changer la couleur de fond
-              Center(
-                child: TextButton.icon(
-                  onPressed: _showColorSelectorDialog,
-                  icon: const Icon(Icons.color_lens),
-                  label: const Text('Changer la couleur de fond'),
-                ),
-              ),
+                  SizedBox(height: screenSize.height * 0.02),
 
-              const SizedBox(height: 24),
-
-              // Formulaire
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Champ nom d'utilisateur
-                    AuthTextField(
-                      controller: _displayNameController,
-                      focusNode: _displayNameFocusNode,
-                      labelText: 'Nom d\'utilisateur',
-                      hintText: 'Choisissez un nom d\'utilisateur',
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: const Icon(Icons.person_outline),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un nom d\'utilisateur';
-                        }
-                        if (value.length < AppConfig.minUsernameLength) {
-                          return 'Le nom doit contenir au moins ${AppConfig.minUsernameLength} caractères';
-                        }
-                        if (value.length > AppConfig.maxUsernameLength) {
-                          return 'Le nom doit contenir maximum ${AppConfig.maxUsernameLength} caractères';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: () {
-                        _emailFocusNode.requestFocus();
-                      },
+                  // Logo et titre
+                  Center(
+                    child: Image.asset('assets/images/logo.png', height: 80),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Créer un compte',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
 
-                    // Champ email
-                    AuthTextField(
-                      controller: _emailController,
-                      focusNode: _emailFocusNode,
-                      labelText: 'Adresse email',
-                      hintText: 'Entrez votre adresse email',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer votre adresse email';
-                        }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Veuillez entrer une adresse email valide';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: () {
-                        _passwordFocusNode.requestFocus();
-                      },
-                    ),
-
-                    // Champ mot de passe
-                    AuthTextField(
-                      controller: _passwordController,
-                      focusNode: _passwordFocusNode,
-                      labelText: 'Mot de passe',
-                      hintText: 'Créez votre mot de passe',
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: _togglePasswordVisibility,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un mot de passe';
-                        }
-                        if (value.length < AppConfig.minPasswordLength) {
-                          return 'Le mot de passe doit contenir au moins ${AppConfig.minPasswordLength} caractères';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: () {
-                        _confirmPasswordFocusNode.requestFocus();
-                      },
-                    ),
-
-                    // Champ confirmation mot de passe
-                    AuthTextField(
-                      controller: _confirmPasswordController,
-                      focusNode: _confirmPasswordFocusNode,
-                      labelText: 'Confirmer le mot de passe',
-                      hintText: 'Confirmez votre mot de passe',
-                      obscureText: _obscureConfirmPassword,
-                      textInputAction: TextInputAction.done,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: _toggleConfirmPasswordVisibility,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez confirmer votre mot de passe';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Les mots de passe ne correspondent pas';
-                        }
-                        return null;
-                      },
-                      onEditingComplete: _handleRegister,
-                    ),
-
-                    // Message d'erreur
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16, bottom: 8),
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                    const SizedBox(height: 24),
-
-                    // Bouton d'inscription
-                    AuthButton(
-                      text: 'S\'inscrire',
-                      onPressed: _handleRegister,
-                      isLoading: isLoading,
-                    ),
-
-                    // Lien pour se connecter
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  // Prévisualisation de l'avatar avec couleur
+                  Center(
+                    child: GestureDetector(
+                      onTap: _showAvatarSelectorDialog,
+                      child: Column(
                         children: [
-                          const Text('Déjà un compte ?'),
-                          TextButton(
-                            onPressed: () => context.go('/login'),
-                            child: const Text('Se connecter'),
+                          AvatarDisplay(
+                            avatar: _selectedAvatar,
+                            color: _selectedColor,
+                            size: 120,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Changer l\'avatar',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+
+                  // Bouton pour changer la couleur de fond
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _showColorSelectorDialog,
+                      icon: const Icon(Icons.color_lens),
+                      label: const Text('Changer la couleur de fond'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Formulaire
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.shadowColor.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Champ nom d'utilisateur
+                          AuthTextField(
+                            controller: _displayNameController,
+                            focusNode: _displayNameFocusNode,
+                            labelText: 'Nom d\'utilisateur',
+                            hintText: 'Choisissez un nom d\'utilisateur',
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: const Icon(Icons.person_outline),
+                            validator: ValidationService.validateUsername,
+                            onEditingComplete: () {
+                              _emailFocusNode.requestFocus();
+                            },
+                          ),
+
+                          // Champ email
+                          AuthTextField(
+                            controller: _emailController,
+                            focusNode: _emailFocusNode,
+                            labelText: 'Adresse email',
+                            hintText: 'Entrez votre adresse email',
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            validator: ValidationService.validateEmail,
+                            onEditingComplete: () {
+                              _passwordFocusNode.requestFocus();
+                            },
+                          ),
+
+                          // Champ mot de passe
+                          AuthTextField(
+                            controller: _passwordController,
+                            focusNode: _passwordFocusNode,
+                            labelText: 'Mot de passe',
+                            hintText: 'Créez votre mot de passe',
+                            obscureText: _obscurePassword,
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: _togglePasswordVisibility,
+                            ),
+                            validator: ValidationService.validatePassword,
+                            onEditingComplete: () {
+                              _confirmPasswordFocusNode.requestFocus();
+                            },
+                          ),
+
+                          // Champ confirmation mot de passe
+                          AuthTextField(
+                            controller: _confirmPasswordController,
+                            focusNode: _confirmPasswordFocusNode,
+                            labelText: 'Confirmer le mot de passe',
+                            hintText: 'Confirmez votre mot de passe',
+                            obscureText: _obscureConfirmPassword,
+                            textInputAction: TextInputAction.done,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: _toggleConfirmPasswordVisibility,
+                            ),
+                            validator:
+                                (value) =>
+                                    ValidationService.validatePasswordConfirmation(
+                                      value,
+                                      _passwordController.text,
+                                    ),
+                            onEditingComplete: _handleRegister,
+                          ),
+
+                          // Message d'erreur
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 16,
+                                bottom: 8,
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+
+                          const SizedBox(height: 24),
+
+                          // Bouton d'inscription
+                          AuthButton(
+                            text: 'S\'inscrire',
+                            onPressed: _handleRegister,
+                            isLoading: isLoading,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Lien pour se connecter
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Déjà un compte ?'),
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: const Text('Se connecter'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Espace inférieur pour meilleur centrage
+                  SizedBox(height: screenSize.height * 0.02),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -386,7 +401,7 @@ class _RegisterViewState extends State<RegisterView> {
               ? Container(
                 height: MediaQuery.of(context).size.height * 0.6,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
+                  color: theme.cardColor,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -408,7 +423,7 @@ class _RegisterViewState extends State<RegisterView> {
                         children: [
                           Text(
                             'Choisissez votre avatar',
-                            style: Theme.of(context).textTheme.titleLarge,
+                            style: theme.textTheme.titleLarge,
                           ),
                           IconButton(
                             icon: const Icon(Icons.close),
@@ -451,7 +466,7 @@ class _RegisterViewState extends State<RegisterView> {
                           children: [
                             Text(
                               'Choisissez une couleur',
-                              style: Theme.of(context).textTheme.titleLarge,
+                              style: theme.textTheme.titleLarge,
                             ),
                             IconButton(
                               icon: const Icon(Icons.close),

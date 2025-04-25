@@ -7,35 +7,37 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:quizzzed/config/app_config.dart';
-import 'package:quizzzed/models/user/profile_color.dart';
 
-class AvatarPreview extends StatelessWidget {
-  final String? avatarUrl;
-  final String? backgroundColor;
+class AvatarDisplay extends StatelessWidget {
+  final String? avatar;
+  final Color? color;
   final double size;
   final bool showBorder;
   final bool allowOverflow;
+  final double? opacityOverride;
 
-  const AvatarPreview({
+  const AvatarDisplay({
     super.key,
-    this.avatarUrl,
-    this.backgroundColor,
+    this.avatar,
+    this.color,
     this.size = 80.0,
     this.showBorder = true,
-    this.allowOverflow =
-        true, // Nouvelle propriété pour contrôler le débordement
+    this.allowOverflow = true,
+    this.opacityOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     // Utiliser l'avatar par défaut si aucun n'est fourni
-    final String avatar = avatarUrl ?? AppConfig.defaultAvatarUrl;
+    final avatarUrl =
+        'assets/images/avatars/${avatar ?? AppConfig.defaultUserAvatar}.png';
 
-    // Obtenir la couleur à partir du nom
-    final Color bgColor =
-        backgroundColor != null
-            ? ProfileColor.getByName(backgroundColor!)?.color ?? Colors.blue
-            : Colors.blue;
+    // Obtenir la couleur à partir du nom et appliquer l'opacité configurable
+    final Color originalColor = color ?? Colors.blue;
+    final double opacity = opacityOverride ?? AppConfig.colorOpacity;
+
+    // Appliquer l'opacité à la couleur
+    final Color bgColor = originalColor.withOpacity(opacity);
 
     return Container(
       width: size,
@@ -58,7 +60,7 @@ class AvatarPreview extends StatelessWidget {
                   BoxShadow(
                     color: Colors.black.withAlpha((255 * 0.2).toInt()),
                     blurRadius: 8,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ]
                 : null,
@@ -66,9 +68,9 @@ class AvatarPreview extends StatelessWidget {
       // Suppression du padding pour maximiser la taille de l'image
       child:
           allowOverflow
-              ? _buildOverflowAvatar(avatar) // Avatar avec débordement
+              ? _buildOverflowAvatar(avatarUrl) // Avatar avec débordement
               : ClipOval(
-                child: Image.asset(avatar, fit: BoxFit.cover),
+                child: Image.asset(avatarUrl, fit: BoxFit.cover),
               ), // Avatar sans débordement
     );
   }

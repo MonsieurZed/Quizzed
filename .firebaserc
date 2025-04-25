@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "quizzzed-app",
-    "staging": "quizzed-base"
+    "default": "quizzed-base"
   },
   "targets": {},
   "etags": {}

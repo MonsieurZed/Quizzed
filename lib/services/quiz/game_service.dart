@@ -9,13 +9,16 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:quizzzed/config/app_config.dart';
+import 'package:quizzzed/models/error_code.dart';
 import 'package:quizzzed/models/quiz/question_model.dart';
 import 'package:quizzzed/models/quiz/quiz_model.dart';
+import 'package:quizzzed/services/error_message_service.dart';
 import 'package:quizzzed/services/firebase_service.dart';
 import 'package:quizzzed/services/logger_service.dart';
 
-class QuizService extends ChangeNotifier {
+class GameService extends ChangeNotifier {
   final FirebaseService _firebase = FirebaseService();
+  final ErrorMessageService _errorService = ErrorMessageService();
 
   // Collections Firestore
   CollectionReference get _quizCollection =>
@@ -53,14 +56,26 @@ class QuizService extends ChangeNotifier {
         return QuizModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }
 
-      return null;
-    } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la récupération du quiz: $e',
-        tag: logTag,
-        data: stackTrace,
+      throw Exception(
+        _errorService.handleError(
+          operation: 'récupération du quiz',
+          tag: logTag,
+          errorCode: ErrorCode.quizNotFound,
+        ),
       );
-      rethrow;
+    } catch (e, stackTrace) {
+      final errorMessage = _errorService.handleError(
+        operation: 'récupération du quiz',
+        tag: logTag,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode:
+            e.toString().contains('not found')
+                ? ErrorCode.quizNotFound
+                : ErrorCode.operationFailed,
+      );
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -120,11 +135,15 @@ class QuizService extends ChangeNotifier {
           )
           .toList();
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la récupération des quiz: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'récupération des quiz',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      // Return empty list instead of throwing to avoid UI crashes
       return [];
     } finally {
       _setLoading(false);
@@ -173,12 +192,15 @@ class QuizService extends ChangeNotifier {
 
       return quiz.copyWith(id: docRef.id);
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la création du quiz: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'création du quiz',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -188,15 +210,17 @@ class QuizService extends ChangeNotifier {
   Future<void> updateQuiz(QuizModel quiz) async {
     try {
       _setLoading(true);
-
       await _quizCollection.doc(quiz.id).update(quiz.toMap());
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la mise à jour du quiz: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'mise à jour du quiz',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -206,28 +230,17 @@ class QuizService extends ChangeNotifier {
   Future<void> deleteQuiz(String quizId) async {
     try {
       _setLoading(true);
-
-      // Récupération des questions associées au quiz pour les supprimer
-      QuerySnapshot questionSnapshot =
-          await _questionCollection.where('quizId', isEqualTo: quizId).get();
-
-      // Supprimer chaque question
-      WriteBatch batch = _firebase.firestore.batch();
-      for (var doc in questionSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-
-      // Supprimer le quiz
-      batch.delete(_quizCollection.doc(quizId));
-
-      await batch.commit();
+      await _quizCollection.doc(quizId).delete();
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la suppression du quiz: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'suppression du quiz',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -240,11 +253,15 @@ class QuizService extends ChangeNotifier {
         'popularity': FieldValue.increment(1),
       });
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de l\'incrémentation de la popularité: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'incrémentation de la popularité',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      // We don't throw here as this is a non-critical operation
     }
   }
 
@@ -267,11 +284,15 @@ class QuizService extends ChangeNotifier {
           )
           .toList();
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la récupération des questions: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'récupération des questions',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      // Return empty list instead of throwing to avoid UI crashes
       return [];
     } finally {
       _setLoading(false);
@@ -294,12 +315,15 @@ class QuizService extends ChangeNotifier {
 
       return question.copyWith(id: docRef.id);
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la création de la question: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'création de la question',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -312,12 +336,15 @@ class QuizService extends ChangeNotifier {
 
       await _questionCollection.doc(question.id).update(question.toMap());
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la mise à jour de la question: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'mise à jour de la question',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -340,12 +367,15 @@ class QuizService extends ChangeNotifier {
 
       await batch.commit();
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la suppression de la question: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'suppression de la question',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
-      rethrow;
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
+      throw Exception(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -374,11 +404,14 @@ class QuizService extends ChangeNotifier {
 
       return categories.toList()..sort();
     } catch (e, stackTrace) {
-      logger.error(
-        'Erreur lors de la récupération des catégories: $e',
+      final errorMessage = _errorService.handleError(
+        operation: 'récupération des catégories',
         tag: logTag,
-        data: stackTrace,
+        error: e,
+        stackTrace: stackTrace,
+        errorCode: ErrorCode.operationFailed,
       );
+      logger.error(errorMessage, tag: logTag, data: stackTrace);
       return [];
     }
   }
